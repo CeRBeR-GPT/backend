@@ -37,9 +37,20 @@ class EmailSender:
 
 @dataclass
 class VariablesData:
+    BASE_URL: str
     MODE: str
-    MIN_ID: int
-    MAX_ID: int
+
+
+@dataclass
+class Secrets:
+    SECRET_KEY: str
+
+
+@dataclass
+class GoogleData:
+    GOOGLE_CLIENT_ID: str
+    GOOGLE_CLIENT_SECRET: str
+    FRONTEND_GOOGLE_URL: str
 
 
 @dataclass
@@ -48,6 +59,8 @@ class Config:
     authJWT: AuthJWT
     email_sender: EmailSender
     variablesData: VariablesData
+    secrets: Secrets
+    googleData: GoogleData
 
 
 def load_config(path: str | None = None) -> Config:
@@ -74,8 +87,15 @@ def load_config(path: str | None = None) -> Config:
             MAX_CODE=int(env("MAX_CODE"))
         ),
         variablesData=VariablesData(
+            BASE_URL=env("BASE_URL"),
             MODE=env("MODE"),
-            MIN_ID=int(env("MIN_ID")),
-            MAX_ID=int(env("MAX_ID"))
-        )
+        ),
+        secrets=Secrets(
+            SECRET_KEY=env("SECRET_KEY")
+        ),
+        googleData=GoogleData(
+            GOOGLE_CLIENT_ID=env("GOOGLE_CLIENT_ID"),
+            GOOGLE_CLIENT_SECRET=env("GOOGLE_CLIENT_SECRET"),
+            FRONTEND_GOOGLE_URL=env("FRONTEND_GOOGLE_URL")
+        ),
     )
