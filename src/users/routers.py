@@ -1,5 +1,5 @@
 from typing import Annotated
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 
 from src.users.models import User
 from src.users.schemas import UserCreate, Token, UserResponse, SuccessfulResponse, SuccessfulGetVerifyCodeResponse, \
@@ -7,6 +7,17 @@ from src.users.schemas import UserCreate, Token, UserResponse, SuccessfulRespons
 from src.users.services import UserService
 
 router = APIRouter(tags=["user"], prefix="/user")
+auth_router = APIRouter(tags=["auth"], prefix="/auth")
+
+
+@auth_router.get("/google")
+async def google_auth(request: Request):
+    return await UserService().get_google_redirect(request)
+
+
+@auth_router.get("/google/callback", name="google_callback")
+async def google_auth_callback(request: Request, code: str, state: str):
+    return await UserService().get_response_from_google_callback(request, code, state)
 
 
 @router.get("/register/verify_code", response_model=SuccessfulGetVerifyCodeResponse)

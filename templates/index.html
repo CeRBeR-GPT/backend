@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Auth Example</title>
+</head>
+<body>
+    <h1>Google Auth Example</h1>
+
+    {% if user %}
+        <div id="user-info">
+            <h2>User Info</h2>
+            <p>Email: {{ user.email }}</p>
+            <p>Name: {{ user.name }}</p>
+        </div>
+    {% else %}
+        <button id="google-auth-button" onclick="window.location.href='/auth/google'">Login with Google</button>
+    {% endif %}
+
+    <script>
+        // Helper function to get a cookie by name
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+        }
+
+        // Function to save a cookie value to localStorage
+        function saveCookieToLocalStorage(cookieName, localStorageKey) {
+            const cookieValue = getCookie(cookieName);
+            if (cookieValue) {
+                localStorage.setItem(localStorageKey, cookieValue);
+                console.log(`Saved ${cookieName} to localStorage as ${localStorageKey}`);
+            } else {
+                console.log(`Cookie ${cookieName} not found.`);
+            }
+        }
+
+        //Function to get user Data
+        async function fetchUserData() {
+            try {
+                const accessToken = localStorage.getItem('access_token'); // Get the accessToken from localStorage
+                if (!accessToken) {
+                  console.log("access_token not found in localStorage.  User likely not authenticated")
+                  return;  //If there's no access_token there's no point doing anything.
+                }
+                const response = await fetch('/user/self', {
+                    method: 'GET',
+                    headers: {
+                      'Authorization': `Bearer ${accessToken}` //Add auth to headers
+                    },
+                    credentials: 'omit',  // Do not include cookies in the request (JWT is in Header)
+                });
+
+                if (response.ok) {
+                    const userData = await response.json();
+                    console.log('User data:', userData);
+                    //Update text to screen.
+                } else {
+                    console.error('Failed to fetch user data:', response.statusText);
+                }
+            } catch (error) {
+                console.error('Error fetching user data:', error);
+            }
+        }
+
+        // Save access_token to localStorage
+        saveCookieToLocalStorage('access_token', 'access_token');
+
+        // Save refresh_token to localStorage
+        saveCookieToLocalStorage('refresh_token', 'refresh_token');
+
+
+        // Check the data with user is loaded to screen
+        fetchUserData();
+
+
+    </script>
+</body>
+</html>
