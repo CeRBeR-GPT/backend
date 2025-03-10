@@ -1,0 +1,12 @@
+__pycache__
+assets
+venv
+tests
+.venv
+*.venv
+.idea
+.git
+
+.env.example
+README.md
+.gitignore
