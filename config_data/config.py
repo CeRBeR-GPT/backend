@@ -54,6 +54,13 @@ class GoogleData:
 
 
 @dataclass
+class YandexData:
+    YANDEX_CLIENT_ID: str
+    YANDEX_CLIENT_SECRET: str
+    FRONTEND_YANDEX_URL: str
+
+
+@dataclass
 class Config:
     database: DataBase
     authJWT: AuthJWT
@@ -61,6 +68,7 @@ class Config:
     variablesData: VariablesData
     secrets: Secrets
     googleData: GoogleData
+    yandexData: YandexData
 
 
 def load_config(path: str | None = None) -> Config:
@@ -98,4 +106,9 @@ def load_config(path: str | None = None) -> Config:
             GOOGLE_CLIENT_SECRET=env("GOOGLE_CLIENT_SECRET"),
             FRONTEND_GOOGLE_URL=env("FRONTEND_GOOGLE_URL")
         ),
+        yandexData=YandexData(
+            YANDEX_CLIENT_ID=env("YANDEX_CLIENT_ID"),
+            YANDEX_CLIENT_SECRET=env("YANDEX_CLIENT_SECRET"),
+            FRONTEND_YANDEX_URL=env("FRONTEND_YANDEX_URL")
+        )
     )

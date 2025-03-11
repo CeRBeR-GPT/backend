@@ -20,6 +20,16 @@ async def google_auth_callback(request: Request, code: str, state: str):
     return await UserService().get_response_from_google_callback(request, code, state)
 
 
+@auth_router.get("/yandex")
+async def yandex_auth(request: Request):
+    return await UserService().get_yandex_redirect(request)
+
+
+@auth_router.get("/yandex/callback", name="yandex_callback")
+async def yandex_auth_callback(request: Request, code: str, state: str):
+    return await UserService().get_response_from_yandex_callback(request, code, state)
+
+
 @router.get("/register/verify_code", response_model=SuccessfulGetVerifyCodeResponse)
 async def get_verify_code_by_email(email: str) -> SuccessfulGetVerifyCodeResponse:
     await UserService().get_verify_code(email)
