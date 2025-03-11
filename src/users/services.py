@@ -29,6 +29,7 @@ settings: Config = load_config(".env")
 auth_config = settings.authJWT
 google_config = settings.googleData
 yandex_config = settings.yandexData
+github_config = settings.githubData
 
 TOKEN_TYPE_FIELD = "type"
 ACCESS_TOKEN_TYPE = "access"
@@ -37,6 +38,10 @@ REFRESH_TOKEN_TYPE = "refresh"
 YANDEX_AUTH_URL = "https://oauth.yandex.ru/authorize"
 YANDEX_TOKEN_URL = "https://oauth.yandex.ru/token"
 YANDEX_USER_INFO_URL = "https://login.yandex.ru/info"
+
+GITHUB_AUTH_URL = "https://github.com/login/oauth/authorize"
+GITHUB_TOKEN_URL = "https://github.com/login/oauth/access_token"
+GITHUB_USER_URL = "https://api.github.com/user"
 
 
 class UserService:
@@ -59,13 +64,13 @@ class UserService:
             "prompt": "select_account",
         }
 
-        url = "https://accounts.google.com/o/oauth2/v2/auth?" + urlencode(params)
-        return RedirectResponse(url)
+        auth_url = "https://accounts.google.com/o/oauth2/v2/auth?" + urlencode(params)
+        return RedirectResponse(auth_url)
 
     async def get_yandex_redirect(self, request: Request):
 
         state = secrets.token_urlsafe(32)
-        request.session["google_oauth_state"] = state
+        request.session["yandex_oauth_state"] = state
         redirect_uri = request.url_for('yandex_callback')
 
         params = {
@@ -74,10 +79,30 @@ class UserService:
             "response_type": "code",
             "state": state,
             "access_type": "offline",
+            "prompt": "select_account",
         }
 
-        url = f"{YANDEX_AUTH_URL}?{urlencode(params)}"
-        return RedirectResponse(url)
+        auth_url = f"{YANDEX_AUTH_URL}?{urlencode(params)}"
+        return RedirectResponse(auth_url)
+
+    async def get_github_redirect(self, request: Request):
+
+        state = secrets.token_urlsafe(32)
+        request.session["github_oauth_state"] = state
+        redirect_uri = request.url_for('github_callback')
+        print(redirect_uri)
+
+        params = {
+            "client_id": github_config.GITHUB_CLIENT_ID,
+            "redirect_uri": redirect_uri,
+            "response_type": "code",
+            "state": state,
+            "scope": "user",
+            "prompt": "select_account",
+        }
+
+        auth_url = f"{GITHUB_AUTH_URL}?{urlencode(params)}"
+        return RedirectResponse(url=auth_url)
 
     async def get_response_from_google_callback(self, request: Request, code: str, state: str):
 
@@ -118,10 +143,10 @@ class UserService:
         except NotFoundException:
             user = await self.create_user(UserCreate(**user_data))
 
-        access_token = UserService().create_access_token(user)
-        refresh_token = UserService().create_refresh_token(user)
+        access_token = self.create_access_token(user)
+        refresh_token = self.create_refresh_token(user)
 
-        response = RedirectResponse(url=google_config.FRONTEND_GOOGLE_URL)
+        response = RedirectResponse(url=settings.variablesData.FRONTEND_REDIRECT_URL)
         response.set_cookie(key="access_token", value=access_token, httponly=False, secure=True, samesite="none",
                             domain=".energy-cerber.ru")
         response.set_cookie(key="refresh_token", value=refresh_token, httponly=False, secure=True, samesite="none",
@@ -166,10 +191,76 @@ class UserService:
         except NotFoundException:
             user = await self.create_user(UserCreate(**user_data))
 
-        access_token = UserService().create_access_token(user)
-        refresh_token = UserService().create_refresh_token(user)
+        access_token = self.create_access_token(user)
+        refresh_token = self.create_refresh_token(user)
 
-        response = RedirectResponse(url=yandex_config.FRONTEND_YANDEX_URL)
+        response = RedirectResponse(url=settings.variablesData.FRONTEND_REDIRECT_URL)
+        response.set_cookie(key="access_token", value=access_token, httponly=False, secure=True, samesite="none",
+                            domain=".energy-cerber.ru")
+        response.set_cookie(key="refresh_token", value=refresh_token, httponly=False, secure=True, samesite="none",
+                            domain=".energy-cerber.ru")
+
+        return response
+
+    async def get_response_from_github_callback(self, request: Request, code: str, state: str):
+
+        if state != request.query_params.get("state"):
+            raise HTTPException(status_code=400, detail="Invalid state")
+
+        params = {
+            "client_id": github_config.GITHUB_CLIENT_ID,
+            "client_secret": github_config.GITHUB_CLIENT_SECRET,
+            "code": code,
+            "redirect_uri": request.url_for('github_callback'),
+        }
+        headers = {
+            "Accept": "application/json",
+        }
+
+        async with httpx.AsyncClient() as client:
+            try:
+                response = await client.post(GITHUB_TOKEN_URL, params=params, headers=headers)
+                response.raise_for_status()
+                tokens = response.json()
+            except httpx.HTTPStatusError as e:
+                raise HTTPException(status_code=400, detail="Failed to obtain tokens from GitHub")
+
+        access_token = tokens.get("access_token")
+        if not access_token:
+            raise HTTPException(status_code=400, detail="Invalid token response from GitHub")
+
+        headers = {
+            "Authorization": f"Bearer {access_token}",
+            "Accept": "application/json",
+        }
+
+        async with httpx.AsyncClient() as client:
+            try:
+                user_response = await client.get(GITHUB_USER_URL, headers=headers)
+                user_response.raise_for_status()
+
+                email_response = await client.get("https://api.github.com/user/emails", headers=headers)
+                email_response.raise_for_status()
+                emails = email_response.json()
+            except httpx.HTTPStatusError as e:
+                raise HTTPException(status_code=400, detail="Failed to fetch user info from GitHub")
+
+        primary_email = next((email["email"] for email in emails if email["primary"]), None)
+
+        user_data = {
+            "email": primary_email,
+            "password": secrets.token_urlsafe(16)
+        }
+
+        try:
+            user = await self.get_user_by_email(user_data["email"])
+        except NotFoundException:
+            user = await self.create_user(UserCreate(**user_data))
+
+        access_token = self.create_access_token(user)
+        refresh_token = self.create_refresh_token(user)
+
+        response = RedirectResponse(url=settings.variablesData.FRONTEND_REDIRECT_URL)
         response.set_cookie(key="access_token", value=access_token, httponly=False, secure=True, samesite="none",
                             domain=".energy-cerber.ru")
         response.set_cookie(key="refresh_token", value=refresh_token, httponly=False, secure=True, samesite="none",
