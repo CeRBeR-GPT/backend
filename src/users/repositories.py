@@ -44,7 +44,7 @@ class UserRepository:
     async def create_user(self, new_user: UserCreate) -> User:
         password = new_user.password
         user_dc = new_user.dict(exclude={"password"})
-        user_dc["password_hash"] = auth_settings.hash_password(password)
+        user_dc["password_hash"] = jwt_settings.hash_password(password)
         user_dc["id"] = uuid.uuid4()
 
         async with async_session() as session:
@@ -60,7 +60,7 @@ class UserRepository:
 
     async def edit_password(self, user: User, password: str) -> None:
         async with async_session() as session:
-            new_hashed_password = auth_settings.hash_password(password)
+            new_hashed_password = jwt_settings.hash_password(password)
             stmt = update(User).where(User.id == user.id).values(password_hash=new_hashed_password)
             await session.execute(stmt)
             await session.commit()
