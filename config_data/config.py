@@ -38,6 +38,7 @@ class EmailSender:
 @dataclass
 class VariablesData:
     BASE_URL: str
+    FRONTEND_REDIRECT_URL: str
     MODE: str
 
 
@@ -50,14 +51,17 @@ class Secrets:
 class GoogleData:
     GOOGLE_CLIENT_ID: str
     GOOGLE_CLIENT_SECRET: str
-    FRONTEND_GOOGLE_URL: str
 
 
 @dataclass
 class YandexData:
     YANDEX_CLIENT_ID: str
     YANDEX_CLIENT_SECRET: str
-    FRONTEND_YANDEX_URL: str
+
+@dataclass
+class GitHubData:
+    GITHUB_CLIENT_ID: str
+    GITHUB_CLIENT_SECRET: str
 
 
 @dataclass
@@ -69,6 +73,7 @@ class Config:
     secrets: Secrets
     googleData: GoogleData
     yandexData: YandexData
+    githubData: GitHubData
 
 
 def load_config(path: str | None = None) -> Config:
@@ -96,6 +101,7 @@ def load_config(path: str | None = None) -> Config:
         ),
         variablesData=VariablesData(
             BASE_URL=env("BASE_URL"),
+            FRONTEND_REDIRECT_URL=env("FRONTEND_REDIRECT_URL"),
             MODE=env("MODE"),
         ),
         secrets=Secrets(
@@ -103,12 +109,14 @@ def load_config(path: str | None = None) -> Config:
         ),
         googleData=GoogleData(
             GOOGLE_CLIENT_ID=env("GOOGLE_CLIENT_ID"),
-            GOOGLE_CLIENT_SECRET=env("GOOGLE_CLIENT_SECRET"),
-            FRONTEND_GOOGLE_URL=env("FRONTEND_GOOGLE_URL")
+            GOOGLE_CLIENT_SECRET=env("GOOGLE_CLIENT_SECRET")
         ),
         yandexData=YandexData(
             YANDEX_CLIENT_ID=env("YANDEX_CLIENT_ID"),
-            YANDEX_CLIENT_SECRET=env("YANDEX_CLIENT_SECRET"),
-            FRONTEND_YANDEX_URL=env("FRONTEND_YANDEX_URL")
+            YANDEX_CLIENT_SECRET=env("YANDEX_CLIENT_SECRET")
+        ),
+        githubData=GitHubData(
+            GITHUB_CLIENT_ID=env("GITHUB_CLIENT_ID"),
+            GITHUB_CLIENT_SECRET=env("GITHUB_CLIENT_SECRET")
         )
     )

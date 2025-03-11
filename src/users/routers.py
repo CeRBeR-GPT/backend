@@ -7,7 +7,7 @@ from src.users.schemas import UserCreate, Token, UserResponse, SuccessfulRespons
 from src.users.services import UserService
 
 router = APIRouter(tags=["user"], prefix="/user")
-auth_router = APIRouter(tags=["auth"], prefix="/auth")
+auth_router = APIRouter(tags=["OAuth2"], prefix="/auth")
 
 
 @auth_router.get("/google")
@@ -28,6 +28,16 @@ async def yandex_auth(request: Request):
 @auth_router.get("/yandex/callback", name="yandex_callback")
 async def yandex_auth_callback(request: Request, code: str, state: str):
     return await UserService().get_response_from_yandex_callback(request, code, state)
+
+
+@auth_router.get("/github")
+async def github_auth(request: Request):
+    return await UserService().get_github_redirect(request)
+
+
+@auth_router.get("/github/callback", name="github_callback")
+async def github_auth_callback(request: Request, code: str, state: str):
+    return await UserService().get_response_from_github_callback(request, code, state)
 
 
 @router.get("/register/verify_code", response_model=SuccessfulGetVerifyCodeResponse)
