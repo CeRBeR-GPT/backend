@@ -243,3 +243,4 @@ class UserService:
             raise AccessException()
 
         return await self.repository.change_verified_status(user)
+
