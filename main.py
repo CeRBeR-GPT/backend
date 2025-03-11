@@ -24,11 +24,11 @@ async def lifespan(app: FastAPI):
 
 
 middleware = [
-    Middleware(SessionMiddleware, secret_key=settings.secrets.SECRET_KEY, same_site="lax", https_only=False)
+    Middleware(SessionMiddleware, secret_key=settings.secrets.SECRET_KEY, same_site="lax", https_only=True)
 ]
 
 origins = [
-    "https://gpt.energy-cerber.ru"
+    "https://gpt.energy-cerber.ru",
     "http://localhost:3000",
     "https://api-gpt.energy-cerber.ru",
     "http://api-gpt.energy-cerber.ru",

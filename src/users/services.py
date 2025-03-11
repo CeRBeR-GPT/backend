@@ -102,8 +102,10 @@ class UserService:
         refresh_token = UserService().create_refresh_token(user)
 
         response = RedirectResponse(url=google_config.FRONTEND_GOOGLE_URL)
-        response.set_cookie(key="access_token", value=access_token)
-        response.set_cookie(key="refresh_token", value=refresh_token)
+        response.set_cookie(key="access_token", value=access_token, httponly=False, secure=True, samesite="none",
+                            domain=".energy-cerber.ru")
+        response.set_cookie(key="refresh_token", value=refresh_token, httponly=False, secure=True, samesite="none",
+                            domain=".energy-cerber.ru")
 
         return response
 
