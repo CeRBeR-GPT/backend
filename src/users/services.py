@@ -28,10 +28,15 @@ http_bearer = HTTPBearer()
 settings: Config = load_config(".env")
 auth_config = settings.authJWT
 google_config = settings.googleData
+yandex_config = settings.yandexData
 
 TOKEN_TYPE_FIELD = "type"
 ACCESS_TOKEN_TYPE = "access"
 REFRESH_TOKEN_TYPE = "refresh"
+
+YANDEX_AUTH_URL = "https://oauth.yandex.ru/authorize"
+YANDEX_TOKEN_URL = "https://oauth.yandex.ru/token"
+YANDEX_USER_INFO_URL = "https://login.yandex.ru/info"
 
 
 class UserService:
@@ -40,9 +45,7 @@ class UserService:
     async def get_google_redirect(self, request: Request):
         state = secrets.token_urlsafe(32)
         request.session["google_oauth_state"] = state
-        print(state)
         redirect_uri = request.url_for('google_callback')
-        # redirect_uri = GOOGLE_REDIRECT_URL
 
         scope = ["openid", "email", "profile"]
 
@@ -57,6 +60,23 @@ class UserService:
         }
 
         url = "https://accounts.google.com/o/oauth2/v2/auth?" + urlencode(params)
+        return RedirectResponse(url)
+
+    async def get_yandex_redirect(self, request: Request):
+
+        state = secrets.token_urlsafe(32)
+        request.session["google_oauth_state"] = state
+        redirect_uri = request.url_for('yandex_callback')
+
+        params = {
+            "client_id": yandex_config.YANDEX_CLIENT_ID,
+            "redirect_uri": redirect_uri,
+            "response_type": "code",
+            "state": state,
+            "access_type": "offline",
+        }
+
+        url = f"{YANDEX_AUTH_URL}?{urlencode(params)}"
         return RedirectResponse(url)
 
     async def get_response_from_google_callback(self, request: Request, code: str, state: str):
@@ -102,6 +122,54 @@ class UserService:
         refresh_token = UserService().create_refresh_token(user)
 
         response = RedirectResponse(url=google_config.FRONTEND_GOOGLE_URL)
+        response.set_cookie(key="access_token", value=access_token, httponly=False, secure=True, samesite="none",
+                            domain=".energy-cerber.ru")
+        response.set_cookie(key="refresh_token", value=refresh_token, httponly=False, secure=True, samesite="none",
+                            domain=".energy-cerber.ru")
+
+        return response
+
+    async def get_response_from_yandex_callback(self, request: Request, code: str, state: str):
+
+        if state != request.query_params.get("state"):
+            raise HTTPException(status_code=400, detail="Invalid state")
+
+        async with httpx.AsyncClient() as client:
+            data = {
+                "grant_type": "authorization_code",
+                "code": code,
+                "client_id": yandex_config.YANDEX_CLIENT_ID,
+                "client_secret": yandex_config.YANDEX_CLIENT_SECRET,
+            }
+
+            token_response = await client.post(YANDEX_TOKEN_URL, data=data)
+            token_response.raise_for_status()
+            tokens = token_response.json()
+
+        access_token = tokens["access_token"]
+
+        async with httpx.AsyncClient() as client:
+            user_info_response = await client.get(
+                YANDEX_USER_INFO_URL,
+                headers={"Authorization": f"OAuth {access_token}"},
+            )
+            user_info_response.raise_for_status()
+            user_info = user_info_response.json()
+
+        user_data = {
+            "email": user_info.get("default_email"),
+            "password": secrets.token_urlsafe(16)
+        }
+
+        try:
+            user = await self.get_user_by_email(user_data["email"])
+        except NotFoundException:
+            user = await self.create_user(UserCreate(**user_data))
+
+        access_token = UserService().create_access_token(user)
+        refresh_token = UserService().create_refresh_token(user)
+
+        response = RedirectResponse(url=yandex_config.FRONTEND_YANDEX_URL)
         response.set_cookie(key="access_token", value=access_token, httponly=False, secure=True, samesite="none",
                             domain=".energy-cerber.ru")
         response.set_cookie(key="refresh_token", value=refresh_token, httponly=False, secure=True, samesite="none",
