@@ -101,7 +101,7 @@ class UserService:
         access_token = UserService().create_access_token(user)
         refresh_token = UserService().create_refresh_token(user)
 
-        response = RedirectResponse(url="/")
+        response = RedirectResponse(url=google_config.FRONTEND_GOOGLE_URL)
         response.set_cookie(key="access_token", value=access_token)
         response.set_cookie(key="refresh_token", value=refresh_token)
 
@@ -243,4 +243,3 @@ class UserService:
             raise AccessException()
 
         return await self.repository.change_verified_status(user)
-
