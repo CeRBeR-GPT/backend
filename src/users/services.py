@@ -26,33 +26,17 @@ http_bearer = HTTPBearer()
 
 settings: Config = load_config(".env")
 auth_config = settings.authJWT
-google_config = settings.googleData
-yandex_config = settings.yandexData
-github_config = settings.githubData
-
-oauth_config_data = {
-    "google": google_config,
-    "yandex": yandex_config,
-    "github": github_config
-}
 
 TOKEN_TYPE_FIELD = "type"
 ACCESS_TOKEN_TYPE = "access"
 REFRESH_TOKEN_TYPE = "refresh"
 
-YANDEX_AUTH_URL = "https://oauth.yandex.ru/authorize"
-YANDEX_TOKEN_URL = "https://oauth.yandex.ru/token"
-YANDEX_USER_INFO_URL = "https://login.yandex.ru/info"
-
-GITHUB_AUTH_URL = "https://github.com/login/oauth/authorize"
-GITHUB_TOKEN_URL = "https://github.com/login/oauth/access_token"
-GITHUB_USER_URL = "https://api.github.com/user"
-
 
 class UserService:
     repository = UserRepository()
 
-    async def get_google_oauth_email(self, data: Dict) -> str:
+    @staticmethod
+    async def get_google_oauth_email(data: Dict) -> str:
         async with httpx.AsyncClient() as client:
             token_response = await client.post(OAuthProvider.GOOGLE.value["TOKEN_URL"], data=data)
             token_response.raise_for_status()
@@ -68,15 +52,16 @@ class UserService:
 
         return user_info["emailAddresses"][0]["value"]
 
-    async def get_yandex_oauth_email(self, data: Dict) -> str:
+    @staticmethod
+    async def get_yandex_oauth_email(data: Dict) -> str:
         async with httpx.AsyncClient() as client:
-            token_response = await client.post(OAuthProvider.YANDEX.value["USER_URL"], data=data)
+            token_response = await client.post(OAuthProvider.YANDEX.value["TOKEN_URL"], data=data)
             token_response.raise_for_status()
             tokens = token_response.json()
 
         async with httpx.AsyncClient() as client:
             user_info_response = await client.get(
-                OAuthProvider.GOOGLE.value["USER_URL"],
+                OAuthProvider.YANDEX.value["USER_URL"],
                 headers={"Authorization": f"OAuth {tokens['access_token']}"},
             )
             user_info_response.raise_for_status()
@@ -84,7 +69,8 @@ class UserService:
 
         return user_info["default_email"]
 
-    async def get_github_oauth_email(self, data: Dict) -> str:
+    @staticmethod
+    async def get_github_oauth_email(data: Dict) -> str:
         headers = {
             "Accept": "application/json",
         }
@@ -141,6 +127,8 @@ class UserService:
     async def get_response_from_oauth2_callback(
             self, request: Request, code: str, state: str, service: OAuthProvider
     ) -> RedirectResponse:
+        if state != request.query_params.get("state"):
+            raise HTTPException(status_code=400, detail="Invalid state")
 
         service_data = service.value
 
@@ -156,7 +144,7 @@ class UserService:
             case "google":
                 email = await self.get_google_oauth_email(data)
             case "yandex":
-                email = await  self.get_yandex_oauth_email(data)
+                email = await self.get_yandex_oauth_email(data)
             case "github":
                 email = await self.get_github_oauth_email(data)
             case _:
