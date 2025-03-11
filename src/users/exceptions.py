@@ -1,6 +1,39 @@
 from fastapi import HTTPException, status
 
 
+class InvalidOAuthStateException(HTTPException):
+    status_code = status.HTTP_400_BAD_REQUEST
+    detail = "Invalid OAuth2 state"
+
+    def __init__(self):
+        super().__init__(status_code=self.status_code, detail=self.detail)
+
+
+class OAuthServiceNotFoundException(HTTPException):
+    status_code = status.HTTP_404_NOT_FOUND
+    detail = "This OAuth service not found"
+
+    def __init__(self):
+        super().__init__(status_code=self.status_code, detail=self.detail)
+
+
+class OAuthTokenNotFoundException(HTTPException):
+    status_code = status.HTTP_400_BAD_REQUEST
+    detail = "Failed to obtain tokens"
+
+    def __init__(self, service_name: str):
+        self.detail += f" from {service_name}"
+        super().__init__(status_code=self.status_code, detail=self.detail)
+
+
+class FetchingGitHubUserException(HTTPException):
+    status_code = status.HTTP_400_BAD_REQUEST
+    detail = "Failed to fetch user info from GitHub"
+
+    def __init__(self):
+        super().__init__(status_code=self.status_code, detail=self.detail)
+
+
 class EmailExistsException(HTTPException):
     status_code = status.HTTP_400_BAD_REQUEST
     detail = "User with this email already exists"
@@ -38,7 +71,7 @@ class TokenTypeException(HTTPException):
         super().__init__(status_code=self.status_code, detail=self.detail)
 
 
-class NotFoundException(HTTPException):
+class UserNotFoundException(HTTPException):
     status_code = status.HTTP_404_NOT_FOUND
     detail = "User not found"
 

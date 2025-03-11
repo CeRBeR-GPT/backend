@@ -1,25 +1,26 @@
 import secrets
 import smtplib
 import uuid
-import httpx
 import jwt
 
-from fastapi import Depends, Request, HTTPException
+from fastapi import Depends, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import RedirectResponse
 from datetime import timedelta
 from urllib.parse import urlencode
-from typing import Optional, Dict
+from typing import Optional
 
 from src.users.models import User, OAuthProvider
 from src.users.repositories import UserRepository
 from src.users.schemas import UserCreate, TokenData
-from src.users.exceptions import CredentialException, TokenTypeException, NotFoundException, AccessException, \
-    EmailExistsException, IncorrectEmailAddressException, IncorrectVerifyCodeException, EmailSenderException
+from src.users.exceptions import CredentialException, TokenTypeException, UserNotFoundException, AccessException, \
+    EmailExistsException, IncorrectEmailAddressException, IncorrectVerifyCodeException, EmailSenderException, \
+    OAuthServiceNotFoundException, InvalidOAuthStateException
 from utils.email_sender import send_verification_code
 
 from config_data.config import Config, load_config
-from utils.auth_settings import validate_password, decode_jwt, encode_jwt
+from utils.jwt_settings import validate_password, decode_jwt, encode_jwt
+from utils.oauth2_settings import get_google_oauth_email, get_yandex_oauth_email, get_github_oauth_email
 
 http_bearer = HTTPBearer()
 
@@ -33,76 +34,6 @@ REFRESH_TOKEN_TYPE = "refresh"
 
 class UserService:
     repository = UserRepository()
-
-    @staticmethod
-    async def get_google_oauth_email(data: Dict) -> str:
-        async with httpx.AsyncClient() as client:
-            token_response = await client.post(OAuthProvider.GOOGLE.value["TOKEN_URL"], data=data)
-            token_response.raise_for_status()
-            tokens = token_response.json()
-
-        async with httpx.AsyncClient() as client:
-            people_response = await client.get(
-                OAuthProvider.GOOGLE.value["USER_URL"],
-                headers={"Authorization": f"Bearer {tokens['access_token']}"}
-            )
-            people_response.raise_for_status()
-            user_info = people_response.json()
-
-        return user_info["emailAddresses"][0]["value"]
-
-    @staticmethod
-    async def get_yandex_oauth_email(data: Dict) -> str:
-        async with httpx.AsyncClient() as client:
-            token_response = await client.post(OAuthProvider.YANDEX.value["TOKEN_URL"], data=data)
-            token_response.raise_for_status()
-            tokens = token_response.json()
-
-        async with httpx.AsyncClient() as client:
-            user_info_response = await client.get(
-                OAuthProvider.YANDEX.value["USER_URL"],
-                headers={"Authorization": f"OAuth {tokens['access_token']}"},
-            )
-            user_info_response.raise_for_status()
-            user_info = user_info_response.json()
-
-        return user_info["default_email"]
-
-    @staticmethod
-    async def get_github_oauth_email(data: Dict) -> str:
-        headers = {
-            "Accept": "application/json",
-        }
-        async with httpx.AsyncClient() as client:
-            try:
-                response = await client.post(OAuthProvider.GITHUB.value["TOKEN_URL"], params=data, headers=headers)
-                response.raise_for_status()
-                tokens = response.json()
-            except httpx.HTTPStatusError as e:
-                raise HTTPException(status_code=400, detail="Failed to obtain tokens from GitHub")
-
-        access_token = tokens.get("access_token")
-        if not access_token:
-            raise HTTPException(status_code=400, detail="Invalid token response from GitHub")
-
-        headers = {
-            "Authorization": f"Bearer {access_token}",
-            "Accept": "application/json",
-        }
-        async with httpx.AsyncClient() as client:
-            try:
-                user_response = await client.get(OAuthProvider.GITHUB.value["USER_URL"], headers=headers)
-                user_response.raise_for_status()
-
-                email_response = await client.get("https://api.github.com/user/emails", headers=headers)
-                email_response.raise_for_status()
-                emails = email_response.json()
-            except httpx.HTTPStatusError as e:
-                raise HTTPException(status_code=400, detail="Failed to fetch user info from GitHub")
-
-        primary_email = next((email["email"] for email in emails if email["primary"]), None)
-
-        return primary_email
 
     async def get_oauth2_redirect(self, request: Request, service: OAuthProvider) -> RedirectResponse:
         service_data = service.value
@@ -127,7 +58,7 @@ class UserService:
             self, request: Request, code: str, state: str, service: OAuthProvider
     ) -> RedirectResponse:
         if state != request.query_params.get("state"):
-            raise HTTPException(status_code=400, detail="Invalid state")
+            raise InvalidOAuthStateException()
 
         service_data = service.value
 
@@ -141,13 +72,13 @@ class UserService:
 
         match service_data["name"]:
             case "google":
-                email = await self.get_google_oauth_email(data)
+                email = await get_google_oauth_email(data)
             case "yandex":
-                email = await self.get_yandex_oauth_email(data)
+                email = await get_yandex_oauth_email(data)
             case "github":
-                email = await self.get_github_oauth_email(data)
+                email = await get_github_oauth_email(data)
             case _:
-                raise HTTPException(status_code=403, detail="Service not allowed")
+                raise OAuthServiceNotFoundException()
 
         user_data = {
             "email": email,
@@ -156,7 +87,7 @@ class UserService:
 
         try:
             user = await self.get_user_by_email(user_data["email"])
-        except NotFoundException:
+        except UserNotFoundException:
             user = await self.create_user(UserCreate(**user_data))
 
         access_token = self.create_access_token(user)
@@ -289,19 +220,19 @@ class UserService:
     async def get_user_by_id(self, user_id: uuid.UUID) -> User:
         user = await self.repository.get_user_by_id(user_id)
         if user is None:
-            raise NotFoundException()
+            raise UserNotFoundException()
         return user
 
     async def get_user_by_email(self, email: str) -> User:
         user = await self.repository.get_user_by_email(email)
         if user is None:
-            raise NotFoundException()
+            raise UserNotFoundException()
         return user
 
     async def change_verified_status(self, user_id: uuid.UUID) -> User:
         user = await self.get_user_by_id(user_id)
         if user is None:
-            raise NotFoundException()
+            raise UserNotFoundException()
         if user.is_admin:
             raise AccessException()
 
