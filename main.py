@@ -28,7 +28,10 @@ middleware = [
 ]
 
 origins = [
-    "*",
+    "https://gpt.energy-cerber.ru"
+    "http://localhost:3000",
+    "https://api-gpt.energy-cerber.ru",
+    "http://api-gpt.energy-cerber.ru",
 ]
 
 app = FastAPI(
