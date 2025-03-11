@@ -1,260 +1,93 @@
 import secrets
 import smtplib
 import uuid
-from urllib.parse import urlencode
-
-import httpx
 import jwt
 
-from datetime import timedelta
-from typing import Optional
-from fastapi import Depends, Request, HTTPException
+from fastapi import Depends, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.responses import RedirectResponse
+from datetime import timedelta
+from urllib.parse import urlencode
+from typing import Optional
+
+from src.users.models import User, OAuthProvider
+from src.users.repositories import UserRepository
+from src.users.schemas import UserCreate, TokenData
+from src.users.exceptions import CredentialException, TokenTypeException, UserNotFoundException, AccessException, \
+    EmailExistsException, IncorrectEmailAddressException, IncorrectVerifyCodeException, EmailSenderException, \
+    OAuthServiceNotFoundException, InvalidOAuthStateException
+from utils.email_sender import send_verification_code
 
 from config_data.config import Config, load_config
-from utils.auth_settings import validate_password, decode_jwt, encode_jwt
-from fastapi.responses import RedirectResponse
-from fastapi.security import OAuth2AuthorizationCodeBearer
-
-from src.users.models import User
-from src.users.repositories import UserRepository
-from src.users.schemas import UserCreate, TokenData, Token
-from src.users.exceptions import CredentialException, TokenTypeException, NotFoundException, AccessException, \
-    EmailExistsException, IncorrectEmailAddressException, IncorrectVerifyCodeException, EmailSenderException
-from utils.email_sender import send_verification_code
+from utils.jwt_settings import validate_password, decode_jwt, encode_jwt
+from utils.oauth2_settings import get_google_oauth_email, get_yandex_oauth_email, get_github_oauth_email
 
 http_bearer = HTTPBearer()
 
 settings: Config = load_config(".env")
 auth_config = settings.authJWT
-google_config = settings.googleData
-yandex_config = settings.yandexData
-github_config = settings.githubData
 
 TOKEN_TYPE_FIELD = "type"
 ACCESS_TOKEN_TYPE = "access"
 REFRESH_TOKEN_TYPE = "refresh"
 
-YANDEX_AUTH_URL = "https://oauth.yandex.ru/authorize"
-YANDEX_TOKEN_URL = "https://oauth.yandex.ru/token"
-YANDEX_USER_INFO_URL = "https://login.yandex.ru/info"
-
-GITHUB_AUTH_URL = "https://github.com/login/oauth/authorize"
-GITHUB_TOKEN_URL = "https://github.com/login/oauth/access_token"
-GITHUB_USER_URL = "https://api.github.com/user"
-
 
 class UserService:
     repository = UserRepository()
 
-    async def get_google_redirect(self, request: Request):
+    async def get_oauth2_redirect(self, request: Request, service: OAuthProvider) -> RedirectResponse:
+        service_data = service.value
         state = secrets.token_urlsafe(32)
-        request.session["google_oauth_state"] = state
-        redirect_uri = request.url_for('google_callback')
-
-        scope = ["openid", "email", "profile"]
+        request.session[f"{service_data['name']}_oauth_state"] = state
+        redirect_uri = request.url_for(f"{service_data['name']}_callback")
 
         params = {
-            "client_id": google_config.GOOGLE_CLIENT_ID,
+            "client_id": service_data['CLIENT_ID'],
             "redirect_uri": redirect_uri,
             "response_type": "code",
-            "scope": " ".join(scope),
+            "scope": service_data['scope'],
             "state": state,
             "access_type": "offline",
             "prompt": "select_account",
         }
 
-        auth_url = "https://accounts.google.com/o/oauth2/v2/auth?" + urlencode(params)
+        auth_url = f"{service_data['AUTH_URL']}?{urlencode(params)}"
         return RedirectResponse(auth_url)
 
-    async def get_yandex_redirect(self, request: Request):
-
-        state = secrets.token_urlsafe(32)
-        request.session["yandex_oauth_state"] = state
-        redirect_uri = request.url_for('yandex_callback')
-
-        params = {
-            "client_id": yandex_config.YANDEX_CLIENT_ID,
-            "redirect_uri": redirect_uri,
-            "response_type": "code",
-            "state": state,
-            "access_type": "offline",
-            "prompt": "select_account",
-        }
-
-        auth_url = f"{YANDEX_AUTH_URL}?{urlencode(params)}"
-        return RedirectResponse(auth_url)
-
-    async def get_github_redirect(self, request: Request):
-
-        state = secrets.token_urlsafe(32)
-        request.session["github_oauth_state"] = state
-        redirect_uri = request.url_for('github_callback')
-        print(redirect_uri)
-
-        params = {
-            "client_id": github_config.GITHUB_CLIENT_ID,
-            "redirect_uri": redirect_uri,
-            "response_type": "code",
-            "state": state,
-            "scope": "user",
-            "prompt": "select_account",
-        }
-
-        auth_url = f"{GITHUB_AUTH_URL}?{urlencode(params)}"
-        return RedirectResponse(url=auth_url)
-
-    async def get_response_from_google_callback(self, request: Request, code: str, state: str):
-
-        # CSRF protection
+    async def get_response_from_oauth2_callback(
+            self, request: Request, code: str, state: str, service: OAuthProvider
+    ) -> RedirectResponse:
         if state != request.query_params.get("state"):
-            raise HTTPException(status_code=400, detail="Invalid state")
+            raise InvalidOAuthStateException()
 
-        token_url = "https://oauth2.googleapis.com/token"
+        service_data = service.value
+
         data = {
             "code": code,
-            "client_id": google_config.GOOGLE_CLIENT_ID,
-            "client_secret": google_config.GOOGLE_CLIENT_SECRET,
-            "redirect_uri": request.url_for('google_callback'),
+            "client_id": service_data["CLIENT_ID"],
+            "client_secret": service_data["CLIENT_SECRET"],
+            "redirect_uri": request.url_for(f"{service_data['name']}_callback"),
             "grant_type": "authorization_code",
         }
 
-        async with httpx.AsyncClient() as client:
-            token_response = await client.post(token_url, data=data)
-            token_response.raise_for_status()
-            tokens = token_response.json()
-
-        access_token = tokens["access_token"]
-        people_url = "https://people.googleapis.com/v1/people/me?personFields=emailAddresses,names"
-        headers = {"Authorization": f"Bearer {access_token}"}
-
-        async with httpx.AsyncClient() as client:
-            people_response = await client.get(people_url, headers=headers)
-            people_response.raise_for_status()
-            user_info = people_response.json()
+        match service_data["name"]:
+            case "google":
+                email = await get_google_oauth_email(data)
+            case "yandex":
+                email = await get_yandex_oauth_email(data)
+            case "github":
+                email = await get_github_oauth_email(data)
+            case _:
+                raise OAuthServiceNotFoundException()
 
         user_data = {
-            "email": user_info["emailAddresses"][0]["value"],
+            "email": email,
             "password": secrets.token_urlsafe(16)
         }
 
         try:
             user = await self.get_user_by_email(user_data["email"])
-        except NotFoundException:
-            user = await self.create_user(UserCreate(**user_data))
-
-        access_token = self.create_access_token(user)
-        refresh_token = self.create_refresh_token(user)
-
-        response = RedirectResponse(url=settings.variablesData.FRONTEND_REDIRECT_URL)
-        response.set_cookie(key="access_token", value=access_token, httponly=False, secure=True, samesite="none",
-                            domain=".energy-cerber.ru")
-        response.set_cookie(key="refresh_token", value=refresh_token, httponly=False, secure=True, samesite="none",
-                            domain=".energy-cerber.ru")
-
-        return response
-
-    async def get_response_from_yandex_callback(self, request: Request, code: str, state: str):
-
-        if state != request.query_params.get("state"):
-            raise HTTPException(status_code=400, detail="Invalid state")
-
-        async with httpx.AsyncClient() as client:
-            data = {
-                "grant_type": "authorization_code",
-                "code": code,
-                "client_id": yandex_config.YANDEX_CLIENT_ID,
-                "client_secret": yandex_config.YANDEX_CLIENT_SECRET,
-            }
-
-            token_response = await client.post(YANDEX_TOKEN_URL, data=data)
-            token_response.raise_for_status()
-            tokens = token_response.json()
-
-        access_token = tokens["access_token"]
-
-        async with httpx.AsyncClient() as client:
-            user_info_response = await client.get(
-                YANDEX_USER_INFO_URL,
-                headers={"Authorization": f"OAuth {access_token}"},
-            )
-            user_info_response.raise_for_status()
-            user_info = user_info_response.json()
-
-        user_data = {
-            "email": user_info.get("default_email"),
-            "password": secrets.token_urlsafe(16)
-        }
-
-        try:
-            user = await self.get_user_by_email(user_data["email"])
-        except NotFoundException:
-            user = await self.create_user(UserCreate(**user_data))
-
-        access_token = self.create_access_token(user)
-        refresh_token = self.create_refresh_token(user)
-
-        response = RedirectResponse(url=settings.variablesData.FRONTEND_REDIRECT_URL)
-        response.set_cookie(key="access_token", value=access_token, httponly=False, secure=True, samesite="none",
-                            domain=".energy-cerber.ru")
-        response.set_cookie(key="refresh_token", value=refresh_token, httponly=False, secure=True, samesite="none",
-                            domain=".energy-cerber.ru")
-
-        return response
-
-    async def get_response_from_github_callback(self, request: Request, code: str, state: str):
-
-        if state != request.query_params.get("state"):
-            raise HTTPException(status_code=400, detail="Invalid state")
-
-        params = {
-            "client_id": github_config.GITHUB_CLIENT_ID,
-            "client_secret": github_config.GITHUB_CLIENT_SECRET,
-            "code": code,
-            "redirect_uri": request.url_for('github_callback'),
-        }
-        headers = {
-            "Accept": "application/json",
-        }
-
-        async with httpx.AsyncClient() as client:
-            try:
-                response = await client.post(GITHUB_TOKEN_URL, params=params, headers=headers)
-                response.raise_for_status()
-                tokens = response.json()
-            except httpx.HTTPStatusError as e:
-                raise HTTPException(status_code=400, detail="Failed to obtain tokens from GitHub")
-
-        access_token = tokens.get("access_token")
-        if not access_token:
-            raise HTTPException(status_code=400, detail="Invalid token response from GitHub")
-
-        headers = {
-            "Authorization": f"Bearer {access_token}",
-            "Accept": "application/json",
-        }
-
-        async with httpx.AsyncClient() as client:
-            try:
-                user_response = await client.get(GITHUB_USER_URL, headers=headers)
-                user_response.raise_for_status()
-
-                email_response = await client.get("https://api.github.com/user/emails", headers=headers)
-                email_response.raise_for_status()
-                emails = email_response.json()
-            except httpx.HTTPStatusError as e:
-                raise HTTPException(status_code=400, detail="Failed to fetch user info from GitHub")
-
-        primary_email = next((email["email"] for email in emails if email["primary"]), None)
-
-        user_data = {
-            "email": primary_email,
-            "password": secrets.token_urlsafe(16)
-        }
-
-        try:
-            user = await self.get_user_by_email(user_data["email"])
-        except NotFoundException:
+        except UserNotFoundException:
             user = await self.create_user(UserCreate(**user_data))
 
         access_token = self.create_access_token(user)
@@ -387,19 +220,19 @@ class UserService:
     async def get_user_by_id(self, user_id: uuid.UUID) -> User:
         user = await self.repository.get_user_by_id(user_id)
         if user is None:
-            raise NotFoundException()
+            raise UserNotFoundException()
         return user
 
     async def get_user_by_email(self, email: str) -> User:
         user = await self.repository.get_user_by_email(email)
         if user is None:
-            raise NotFoundException()
+            raise UserNotFoundException()
         return user
 
     async def change_verified_status(self, user_id: uuid.UUID) -> User:
         user = await self.get_user_by_id(user_id)
         if user is None:
-            raise NotFoundException()
+            raise UserNotFoundException()
         if user.is_admin:
             raise AccessException()
 

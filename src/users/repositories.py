@@ -4,7 +4,7 @@ from typing import Optional, List
 from sqlalchemy import insert, select, delete, update
 
 from config_data.config import Config, load_config
-from utils import auth_settings
+from utils import jwt_settings
 from src.database import async_session
 
 from src.users.models import User, VerifyCode
