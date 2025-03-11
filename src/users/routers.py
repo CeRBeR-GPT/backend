@@ -27,17 +27,17 @@ async def github_auth(request: Request):
 
 @auth_router.get("/google/callback", name="google_callback")
 async def google_auth_callback(request: Request, code: str, state: str):
-    return await UserService().get_response_from_google_callback(request, code, state)
+    return await UserService().get_response_from_oauth2_callback(request, code, state, OAuthProvider.GOOGLE)
 
 
 @auth_router.get("/yandex/callback", name="yandex_callback")
 async def yandex_auth_callback(request: Request, code: str, state: str):
-    return await UserService().get_response_from_yandex_callback(request, code, state)
+    return await UserService().get_response_from_oauth2_callback(request, code, state, OAuthProvider.YANDEX)
 
 
 @auth_router.get("/github/callback", name="github_callback")
 async def github_auth_callback(request: Request, code: str, state: str):
-    return await UserService().get_response_from_github_callback(request, code, state)
+    return await UserService().get_response_from_oauth2_callback(request, code, state, OAuthProvider.GITHUB)
 
 
 @router.get("/register/verify_code", response_model=SuccessfulGetVerifyCodeResponse)
