@@ -49,19 +49,20 @@ class Secrets:
 
 @dataclass
 class GoogleData:
-    GOOGLE_CLIENT_ID: str
-    GOOGLE_CLIENT_SECRET: str
+    CLIENT_ID: str
+    CLIENT_SECRET: str
 
 
 @dataclass
 class YandexData:
-    YANDEX_CLIENT_ID: str
-    YANDEX_CLIENT_SECRET: str
+    CLIENT_ID: str
+    CLIENT_SECRET: str
+
 
 @dataclass
 class GitHubData:
-    GITHUB_CLIENT_ID: str
-    GITHUB_CLIENT_SECRET: str
+    CLIENT_ID: str
+    CLIENT_SECRET: str
 
 
 @dataclass
@@ -108,15 +109,15 @@ def load_config(path: str | None = None) -> Config:
             SECRET_KEY=env("SECRET_KEY")
         ),
         googleData=GoogleData(
-            GOOGLE_CLIENT_ID=env("GOOGLE_CLIENT_ID"),
-            GOOGLE_CLIENT_SECRET=env("GOOGLE_CLIENT_SECRET")
+            CLIENT_ID=env("GOOGLE_CLIENT_ID"),
+            CLIENT_SECRET=env("GOOGLE_CLIENT_SECRET")
         ),
         yandexData=YandexData(
-            YANDEX_CLIENT_ID=env("YANDEX_CLIENT_ID"),
-            YANDEX_CLIENT_SECRET=env("YANDEX_CLIENT_SECRET")
+            CLIENT_ID=env("YANDEX_CLIENT_ID"),
+            CLIENT_SECRET=env("YANDEX_CLIENT_SECRET")
         ),
         githubData=GitHubData(
-            GITHUB_CLIENT_ID=env("GITHUB_CLIENT_ID"),
-            GITHUB_CLIENT_SECRET=env("GITHUB_CLIENT_SECRET")
+            CLIENT_ID=env("GITHUB_CLIENT_ID"),
+            CLIENT_SECRET=env("GITHUB_CLIENT_SECRET")
         )
     )

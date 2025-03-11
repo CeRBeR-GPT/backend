@@ -7,7 +7,45 @@ import uuid
 from sqlalchemy import UUID, func, String
 from sqlalchemy.orm import Mapped, mapped_column
 
+from config_data.config import load_config, Config
 from src.database import Base
+
+settings: Config = load_config(".env")
+google_config = settings.googleData
+yandex_config = settings.yandexData
+github_config = settings.githubData
+
+
+class OAuthProvider(Enum):
+    GOOGLE = {
+        "name": "google",
+        "scope": "openid email profile",
+        "CLIENT_ID": google_config.CLIENT_ID,
+        "CLIENT_SECRET": google_config.CLIENT_SECRET,
+        "TOKEN_URL": "https://oauth2.googleapis.com/token",
+        "AUTH_URL": "https://accounts.google.com/o/oauth2/v2/auth",
+        "USER_URL": "https://people.googleapis.com/v1/people/me?personFields=emailAddresses,names"
+    }
+
+    YANDEX = {
+        "name": "yandex",
+        "scope": "login:email login:info",
+        "CLIENT_ID": yandex_config.CLIENT_ID,
+        "CLIENT_SECRET": yandex_config.CLIENT_SECRET,
+        "TOKEN_URL": "https://oauth.yandex.ru/token",
+        "AUTH_URL": "https://oauth.yandex.ru/authorize",
+        "USER_URL": "https://login.yandex.ru/info"
+    }
+
+    GITHUB = {
+        "name": "github",
+        "scope": "user:email",
+        "CLIENT_ID": github_config.CLIENT_ID,
+        "CLIENT_SECRET": github_config.CLIENT_SECRET,
+        "TOKEN_URL": "https://github.com/login/oauth/access_token",
+        "AUTH_URL": "https://github.com/login/oauth/authorize",
+        "USER_URL": "https://api.github.com/user"
+    }
 
 
 class User(Base):

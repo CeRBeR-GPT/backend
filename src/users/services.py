@@ -14,11 +14,10 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from config_data.config import Config, load_config
 from utils.auth_settings import validate_password, decode_jwt, encode_jwt
 from fastapi.responses import RedirectResponse
-from fastapi.security import OAuth2AuthorizationCodeBearer
 
-from src.users.models import User
+from src.users.models import User, OAuthProvider
 from src.users.repositories import UserRepository
-from src.users.schemas import UserCreate, TokenData, Token
+from src.users.schemas import UserCreate, TokenData
 from src.users.exceptions import CredentialException, TokenTypeException, NotFoundException, AccessException, \
     EmailExistsException, IncorrectEmailAddressException, IncorrectVerifyCodeException, EmailSenderException
 from utils.email_sender import send_verification_code
@@ -30,6 +29,12 @@ auth_config = settings.authJWT
 google_config = settings.googleData
 yandex_config = settings.yandexData
 github_config = settings.githubData
+
+oauth_config_data = {
+    "google": google_config,
+    "yandex": yandex_config,
+    "github": github_config
+}
 
 TOKEN_TYPE_FIELD = "type"
 ACCESS_TOKEN_TYPE = "access"
@@ -47,62 +52,24 @@ GITHUB_USER_URL = "https://api.github.com/user"
 class UserService:
     repository = UserRepository()
 
-    async def get_google_redirect(self, request: Request):
+    async def get_oauth2_redirect(self, request: Request, service: OAuthProvider):
+        service_data = service.value
         state = secrets.token_urlsafe(32)
-        request.session["google_oauth_state"] = state
-        redirect_uri = request.url_for('google_callback')
-
-        scope = ["openid", "email", "profile"]
+        request.session[f"{service_data['name']}_oauth_state"] = state
+        redirect_uri = request.url_for(f"{service_data['name']}_callback")
 
         params = {
-            "client_id": google_config.GOOGLE_CLIENT_ID,
+            "client_id": service_data['CLIENT_ID'],
             "redirect_uri": redirect_uri,
             "response_type": "code",
-            "scope": " ".join(scope),
+            "scope": service_data['scope'],
             "state": state,
             "access_type": "offline",
             "prompt": "select_account",
         }
 
-        auth_url = "https://accounts.google.com/o/oauth2/v2/auth?" + urlencode(params)
+        auth_url = f"{service_data['AUTH_URL']}?{urlencode(params)}"
         return RedirectResponse(auth_url)
-
-    async def get_yandex_redirect(self, request: Request):
-
-        state = secrets.token_urlsafe(32)
-        request.session["yandex_oauth_state"] = state
-        redirect_uri = request.url_for('yandex_callback')
-
-        params = {
-            "client_id": yandex_config.YANDEX_CLIENT_ID,
-            "redirect_uri": redirect_uri,
-            "response_type": "code",
-            "state": state,
-            "access_type": "offline",
-            "prompt": "select_account",
-        }
-
-        auth_url = f"{YANDEX_AUTH_URL}?{urlencode(params)}"
-        return RedirectResponse(auth_url)
-
-    async def get_github_redirect(self, request: Request):
-
-        state = secrets.token_urlsafe(32)
-        request.session["github_oauth_state"] = state
-        redirect_uri = request.url_for('github_callback')
-        print(redirect_uri)
-
-        params = {
-            "client_id": github_config.GITHUB_CLIENT_ID,
-            "redirect_uri": redirect_uri,
-            "response_type": "code",
-            "state": state,
-            "scope": "user",
-            "prompt": "select_account",
-        }
-
-        auth_url = f"{GITHUB_AUTH_URL}?{urlencode(params)}"
-        return RedirectResponse(url=auth_url)
 
     async def get_response_from_google_callback(self, request: Request, code: str, state: str):
 
@@ -113,8 +80,8 @@ class UserService:
         token_url = "https://oauth2.googleapis.com/token"
         data = {
             "code": code,
-            "client_id": google_config.GOOGLE_CLIENT_ID,
-            "client_secret": google_config.GOOGLE_CLIENT_SECRET,
+            "client_id": google_config.CLIENT_ID,
+            "client_secret": google_config.CLIENT_SECRET,
             "redirect_uri": request.url_for('google_callback'),
             "grant_type": "authorization_code",
         }
@@ -163,8 +130,8 @@ class UserService:
             data = {
                 "grant_type": "authorization_code",
                 "code": code,
-                "client_id": yandex_config.YANDEX_CLIENT_ID,
-                "client_secret": yandex_config.YANDEX_CLIENT_SECRET,
+                "client_id": yandex_config.CLIENT_ID,
+                "client_secret": yandex_config.CLIENT_SECRET,
             }
 
             token_response = await client.post(YANDEX_TOKEN_URL, data=data)
@@ -208,8 +175,8 @@ class UserService:
             raise HTTPException(status_code=400, detail="Invalid state")
 
         params = {
-            "client_id": github_config.GITHUB_CLIENT_ID,
-            "client_secret": github_config.GITHUB_CLIENT_SECRET,
+            "client_id": github_config.CLIENT_ID,
+            "client_secret": github_config.CLIENT_SECRET,
             "code": code,
             "redirect_uri": request.url_for('github_callback'),
         }
