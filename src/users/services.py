@@ -1,19 +1,15 @@
 import secrets
 import smtplib
 import uuid
-from urllib.parse import urlencode
-
 import httpx
 import jwt
 
-from datetime import timedelta
-from typing import Optional, Dict
 from fastapi import Depends, Request, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-
-from config_data.config import Config, load_config
-from utils.auth_settings import validate_password, decode_jwt, encode_jwt
 from fastapi.responses import RedirectResponse
+from datetime import timedelta
+from urllib.parse import urlencode
+from typing import Optional, Dict
 
 from src.users.models import User, OAuthProvider
 from src.users.repositories import UserRepository
@@ -21,6 +17,9 @@ from src.users.schemas import UserCreate, TokenData
 from src.users.exceptions import CredentialException, TokenTypeException, NotFoundException, AccessException, \
     EmailExistsException, IncorrectEmailAddressException, IncorrectVerifyCodeException, EmailSenderException
 from utils.email_sender import send_verification_code
+
+from config_data.config import Config, load_config
+from utils.auth_settings import validate_password, decode_jwt, encode_jwt
 
 http_bearer = HTTPBearer()
 

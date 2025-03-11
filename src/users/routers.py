@@ -1,5 +1,5 @@
-from typing import Annotated
 from fastapi import APIRouter, Depends, Request
+from typing import Annotated
 
 from src.users.models import User, OAuthProvider
 from src.users.schemas import UserCreate, Token, UserResponse, SuccessfulResponse, SuccessfulGetVerifyCodeResponse, \
