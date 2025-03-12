@@ -1,11 +1,11 @@
 import datetime
 
 from enum import Enum
-from typing import Dict, Any
+from typing import Dict, Any, List
 import uuid
 
 from sqlalchemy import UUID, func, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from config_data.config import load_config, Config
 from src.database import Base
@@ -48,11 +48,45 @@ class OAuthProvider(Enum):
     }
 
 
+class Plans(Enum):
+    default = "default"
+    premium = "premium"
+    business = "business"
+
+
+plan_settings = {
+    "default": {
+        "max_length": 2000,
+        "count_limit": 10,
+        "price": 0,
+        "description": "Default AI-Chat plan",
+        "priority": 1,
+    },
+    "premium": {
+        "max_length": 10000,
+        "count_limit": 50,
+        "price": 999,
+        "description": "Buy premium AI-Chat plan",
+        "priority": 2,
+    },
+    "business": {
+        "max_length": 20000,
+        "count_limit": 100,
+        "price": 2999,
+        "description": "Buy business AI-Chat plan",
+        "priority": 3
+    }
+}
+
+
 class User(Base):
     __tablename__ = "users"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     email: Mapped[str] = mapped_column(unique=True)
+    plan: Mapped[Plans] = mapped_column(default=Plans.default)
+    message_length_limit: Mapped[int] = mapped_column(default=plan_settings["default"]["max_length"])
+    message_count_limit: Mapped[int] = mapped_column(default=plan_settings["default"]["count_limit"])
     is_admin: Mapped[bool] = mapped_column(default=False)
     is_verified: Mapped[bool] = mapped_column(default=False)
     is_active: Mapped[bool] = mapped_column(default=True)
@@ -64,6 +98,9 @@ class User(Base):
             "id": str(self.id),
             "email": self.email,
             "is_admin": self.is_admin,
+            "plan": self.plan.value,
+            "message_length_limit": self.message_length_limit,
+            "message_count_limit": self.message_count_limit,
             "is_verified": self.is_verified,
             "is_active": self.is_active,
             "created_at": self.created_at.isoformat(),

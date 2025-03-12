@@ -10,7 +10,7 @@ from datetime import timedelta
 from urllib.parse import urlencode
 from typing import Optional
 
-from src.users.models import User, OAuthProvider
+from src.users.models import User, OAuthProvider, Plans
 from src.users.repositories import UserRepository
 from src.users.schemas import UserCreate, TokenData
 from src.users.exceptions import CredentialException, TokenTypeException, UserNotFoundException, AccessException, \
@@ -228,6 +228,9 @@ class UserService:
         if user is None:
             raise UserNotFoundException()
         return user
+
+    async def update_user_plan(self, user_id: uuid.UUID, plan: Plans) -> User:
+        return await self.repository.update_user_plan(user_id, plan)
 
     async def change_verified_status(self, user_id: uuid.UUID) -> User:
         user = await self.get_user_by_id(user_id)

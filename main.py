@@ -10,6 +10,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from config_data.config import Config, load_config
 from src.users.routers import router as user_router, auth_router
+from src.transactions.routers import router as transaction_router
 
 settings: Config = load_config(".env")
 
@@ -54,6 +55,7 @@ async def ping_pong():
 
 app.include_router(auth_router)
 app.include_router(user_router)
+app.include_router(transaction_router)
 
 if __name__ == "__main__":
     uvicorn.run(

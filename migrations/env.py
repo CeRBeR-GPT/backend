@@ -3,16 +3,15 @@ import os
 import sys
 
 from logging.config import fileConfig
+from alembic import context
 
 from sqlalchemy.engine import Connection
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from src.database import Base
-
-from src.users.models import User, VerifyCode  # noqa
-
-from alembic import context
+from src.users.models import User, VerifyCode, Plans  # noqa
+from src.transactions.models import Transaction  # noqa
 
 from config_data.config import Config, load_config
 

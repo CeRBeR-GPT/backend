@@ -66,6 +66,12 @@ class GitHubData:
 
 
 @dataclass
+class YookassaData:
+    CLIENT_ID: str
+    CLIENT_SECRET: str
+
+
+@dataclass
 class Config:
     database: DataBase
     authJWT: AuthJWT
@@ -75,6 +81,7 @@ class Config:
     googleData: GoogleData
     yandexData: YandexData
     githubData: GitHubData
+    yookassaData: YookassaData
 
 
 def load_config(path: str | None = None) -> Config:
@@ -119,5 +126,9 @@ def load_config(path: str | None = None) -> Config:
         githubData=GitHubData(
             CLIENT_ID=env("GITHUB_CLIENT_ID"),
             CLIENT_SECRET=env("GITHUB_CLIENT_SECRET")
+        ),
+        yookassaData=YookassaData(
+            CLIENT_ID=env("YOOKASSA_CLIENT_ID"),
+            CLIENT_SECRET=env("YOOKASSA_CLIENT_SECRET")
         )
     )
