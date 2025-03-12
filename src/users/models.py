@@ -1,11 +1,11 @@
 import datetime
 
 from enum import Enum
-from typing import Dict, Any
+from typing import Dict, Any, List
 import uuid
 
 from sqlalchemy import UUID, func, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from config_data.config import load_config, Config
 from src.database import Base
@@ -57,15 +57,18 @@ class Plans(Enum):
 plan_settings = {
     "default": {
         "max_length": 2000,
-        "count_limit": 10
+        "count_limit": 10,
+        "price": 0
     },
     "premium": {
         "max_length": 10000,
-        "count_limit": 50
+        "count_limit": 50,
+        "price": 999
     },
     "business": {
         "max_length": 20000,
-        "count_limit": 100
+        "count_limit": 100,
+        "price": 2999
     }
 }
 
@@ -84,14 +87,21 @@ class User(Base):
     password_hash: Mapped[bytes] = mapped_column()
     created_at: Mapped[datetime.datetime] = mapped_column(default=func.now())
 
+    transactions: Mapped[List["Transaction"]] = relationship(back_populates="seller", uselist=True, lazy="selectin",
+                                                             cascade="all, delete-orphan")
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "id": str(self.id),
             "email": self.email,
             "is_admin": self.is_admin,
+            "plan": self.plan.value,
+            "message_length_limit": self.message_length_limit,
+            "message_count_limit": self.message_count_limit,
             "is_verified": self.is_verified,
             "is_active": self.is_active,
             "created_at": self.created_at.isoformat(),
+            "transactions": [transaction.to_dict() for transaction in self.transactions]
         }
 
 
