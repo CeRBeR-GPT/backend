@@ -23,7 +23,7 @@ async def get_all_user_transactions(
 # await UserService().update_user_plan(transaction.user_id, transaction.plan)
 
 
-@router.post("/payment", response_model=TransactionURLResponse)
+@router.post("/new_payment", response_model=TransactionURLResponse)
 async def new_payment(
         current_user: Annotated[User, Depends(UserService().get_current_user)],
         plan: Plans
@@ -31,7 +31,7 @@ async def new_payment(
     return TransactionURLResponse(url=await TransactionService().create_transaction(current_user, plan))
 
 
-@router.get("/is_confirmed/{idempotency_key}", response_model=CheckConfirmedResponse)
+@router.get("/is_confirmed/{idempotency_key}    ", response_model=CheckConfirmedResponse)
 async def check_transaction_confirmed(
         current_user: Annotated[User, Depends(UserService().get_current_user)],
         idempotency_key: uuid.UUID

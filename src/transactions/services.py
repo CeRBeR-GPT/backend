@@ -49,18 +49,18 @@ class TransactionService:
 
         amount = new_plan_about["price"]
         idempotency_key = uuid.uuid4()
-        return_url = f"{settings.variablesData.BASE_URL}/payment/{idempotency_key}"
-        payment = self.create_yookassa_transaction(
+        return_url = f"{settings.variablesData.BASE_URL}/transaction/{idempotency_key}"
+        transaction = self.create_yookassa_transaction(
             idempotency_key,
             amount,
             new_plan_about["description"],
             return_url
         )
 
-        payment_id = payment.id
-        confirmation_url = payment.confirmation.confirmation_url
+        transaction_id = transaction.id
+        confirmation_url = transaction.confirmation.confirmation_url
 
-        await self.repository.create_transaction(payment_id, user.id, idempotency_key, plan, amount)
+        await self.repository.create_transaction(transaction_id, user.id, idempotency_key, plan, amount)
 
         return confirmation_url
 
