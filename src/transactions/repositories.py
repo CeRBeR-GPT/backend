@@ -1,13 +1,8 @@
 import uuid
-
-from typing import Optional, List
-from sqlalchemy import insert, select, delete, update
+from sqlalchemy import insert, select, update
 
 from src.database import async_session
 from src.transactions.models import Transaction
-
-from src.users.models import User, VerifyCode
-from src.users.schemas import UserCreate
 
 
 class TransactionRepository:
@@ -34,7 +29,7 @@ class TransactionRepository:
 
         return transaction
 
-    async def get_transaction_by_idempotency_key(self, idempotency_key: uuid.UUID):
+    async def get_transaction_by_idempotency_key(self, idempotency_key: uuid.UUID) -> Transaction:
         async with async_session() as session:
             query = select(Transaction).where(Transaction.idempotency_key == idempotency_key)
             result = await session.execute(query)

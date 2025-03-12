@@ -54,21 +54,29 @@ class Plans(Enum):
     business = "business"
 
 
+class PlansPayment(Enum):
+    premium = "premium"
+    business = "business"
+
+
 plan_settings = {
     "default": {
         "max_length": 2000,
         "count_limit": 10,
-        "price": 0
+        "price": 0,
+        "description": "Default AI-Chat plan"
     },
     "premium": {
         "max_length": 10000,
         "count_limit": 50,
-        "price": 999
+        "price": 999,
+        "description": "Buy premium AI-Chat plan"
     },
     "business": {
         "max_length": 20000,
         "count_limit": 100,
-        "price": 2999
+        "price": 2999,
+        "description": "Buy business AI-Chat plan"
     }
 }
 
