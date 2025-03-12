@@ -1,8 +1,11 @@
 import uuid
-from typing import Annotated
+from typing import Annotated, List
 
 from pydantic import BaseModel
 from pydantic.v1 import Field
+
+from src.transactions.schemas import TransactionResponse
+from src.users.models import Plans
 
 
 class SuccessfulResponse(BaseModel):
@@ -35,6 +38,9 @@ class UserCreate(BaseModel):
 class UserResponse(BaseModel):
     id: uuid.UUID
     email: Annotated[str, Field(min_length=6, max_length=50)]
+    plan: Plans
+    message_length_limit: int
+    message_count_limit: int
 
     class Config:
         orm_mode = True

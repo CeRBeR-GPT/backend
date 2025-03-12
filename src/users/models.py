@@ -54,29 +54,27 @@ class Plans(Enum):
     business = "business"
 
 
-class PlansPayment(Enum):
-    premium = "premium"
-    business = "business"
-
-
 plan_settings = {
     "default": {
         "max_length": 2000,
         "count_limit": 10,
         "price": 0,
-        "description": "Default AI-Chat plan"
+        "description": "Default AI-Chat plan",
+        "priority": 1,
     },
     "premium": {
         "max_length": 10000,
         "count_limit": 50,
         "price": 999,
-        "description": "Buy premium AI-Chat plan"
+        "description": "Buy premium AI-Chat plan",
+        "priority": 2,
     },
     "business": {
         "max_length": 20000,
         "count_limit": 100,
         "price": 2999,
-        "description": "Buy business AI-Chat plan"
+        "description": "Buy business AI-Chat plan",
+        "priority": 3
     }
 }
 
@@ -95,9 +93,6 @@ class User(Base):
     password_hash: Mapped[bytes] = mapped_column()
     created_at: Mapped[datetime.datetime] = mapped_column(default=func.now())
 
-    transactions: Mapped[List["Transaction"]] = relationship(back_populates="seller", uselist=True, lazy="selectin",
-                                                             cascade="all, delete-orphan")
-
     def to_dict(self) -> Dict[str, Any]:
         return {
             "id": str(self.id),
@@ -109,7 +104,6 @@ class User(Base):
             "is_verified": self.is_verified,
             "is_active": self.is_active,
             "created_at": self.created_at.isoformat(),
-            "transactions": [transaction.to_dict() for transaction in self.transactions]
         }
 
 

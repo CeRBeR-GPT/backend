@@ -7,7 +7,7 @@ from config_data.config import Config, load_config
 from utils import jwt_settings
 from src.database import async_session
 
-from src.users.models import User, VerifyCode
+from src.users.models import User, VerifyCode, Plans, plan_settings
 from src.users.schemas import UserCreate
 
 settings: Config = load_config(".env")
@@ -80,27 +80,24 @@ class UserRepository:
 
             return users
 
-    async def change_admin_status(self, user: User) -> User:
+    async def update_user_plan(self, user_id: uuid.UUID, plan: Plans) -> User:
+        new_plan_about = plan_settings[plan.value]
+        new_message_length_limit = new_plan_about["max_length"]
+        new_message_count_limit = new_plan_about["count_limit"]
         async with async_session() as session:
-            stmt = update(User).where(User.id == user.id).values(is_admin=False if user.is_admin else True)
+            stmt = update(User).where(User.id == user_id).values(
+                plan=plan,
+                message_length_limit=new_message_length_limit,
+                message_count_limit=new_message_count_limit
+            )
             await session.execute(stmt)
             await session.commit()
 
-            user: User = await self.get_user_by_id(user.id)
-            return user
+        return await self.get_user_by_id(user_id)
 
     async def change_verified_status(self, user: User) -> User:
         async with async_session() as session:
             stmt = update(User).where(User.id == user.id).values(is_verified=False if user.is_verified else True)
-            await session.execute(stmt)
-            await session.commit()
-
-            user: User = await self.get_user_by_id(user.id)
-            return user
-
-    async def change_active_status(self, user: User) -> User:
-        async with async_session() as session:
-            stmt = update(User).where(User.id == user.id).values(is_active=False if user.is_active else True)
             await session.execute(stmt)
             await session.commit()
 
@@ -118,38 +115,5 @@ class UserRepository:
     async def delete_user(self, user: User) -> None:
         async with async_session() as session:
             stmt = delete(User).where(User.id == user.id)
-            await session.execute(stmt)
-            await session.commit()
-
-    async def set_admin_status(self, user: User) -> User:
-        async with async_session() as session:
-            stmt = update(User).where(User.id == user.id).values(is_admin=True)
-            await session.execute(stmt)
-            await session.commit()
-
-            user: User = await self.get_user_by_id(user.id)
-            return user
-
-    async def delete_user_by_id(self, user_id: uuid.UUID) -> None:
-        async with async_session() as session:
-            stmt = delete(User).where(User.id == user_id)
-            await session.execute(stmt)
-            await session.commit()
-
-    async def remove_user_admin_status(self, user_id: uuid.UUID) -> None:
-        async with async_session() as session:
-            stmt = update(User).where(User.id == user_id).values(is_admin=False)
-            await session.execute(stmt)
-            await session.commit()
-
-    async def remove_admin_status_for_all(self) -> None:
-        async with async_session() as session:
-            stmt = update(User).values(is_admin=False)
-            await session.execute(stmt)
-            await session.commit()
-
-    async def delete_all_users(self) -> None:
-        async with async_session() as session:
-            stmt = delete(User)
             await session.execute(stmt)
             await session.commit()
