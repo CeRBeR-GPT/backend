@@ -13,8 +13,8 @@ class Transaction(Base):
 
     id: Mapped[str] = mapped_column(primary_key=True)
     idempotency_key: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), default=uuid.uuid4)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
-    amount: Mapped[str] = mapped_column()
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    amount: Mapped[float] = mapped_column()
     is_confirmed: Mapped[bool] = mapped_column(default=False)
     created_at: Mapped[datetime.datetime] = mapped_column(default=func.now())
 
