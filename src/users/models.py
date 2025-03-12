@@ -48,11 +48,36 @@ class OAuthProvider(Enum):
     }
 
 
+class Plans(Enum):
+    default = "default"
+    premium = "premium"
+    business = "business"
+
+
+plan_settings = {
+    "default": {
+        "max_length": 2000,
+        "count_limit": 10
+    },
+    "premium": {
+        "max_length": 10000,
+        "count_limit": 50
+    },
+    "business": {
+        "max_length": 20000,
+        "count_limit": 100
+    }
+}
+
+
 class User(Base):
     __tablename__ = "users"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     email: Mapped[str] = mapped_column(unique=True)
+    plan: Mapped[Plans] = mapped_column(default=Plans.default)
+    message_length_limit: Mapped[int] = mapped_column(default=plan_settings["default"]["max_length"])
+    message_count_limit: Mapped[int] = mapped_column(default=plan_settings["default"]["count_limit"])
     is_admin: Mapped[bool] = mapped_column(default=False)
     is_verified: Mapped[bool] = mapped_column(default=False)
     is_active: Mapped[bool] = mapped_column(default=True)
