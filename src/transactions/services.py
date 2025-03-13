@@ -49,7 +49,7 @@ class TransactionService:
 
         amount = new_plan_about["price"]
         idempotency_key = uuid.uuid4()
-        return_url = f"{settings.variablesData.BASE_URL}/transaction/{idempotency_key}"
+        return_url = settings.variablesData.FRONTEND_HOST
         transaction = self.create_yookassa_transaction(
             idempotency_key,
             amount,
