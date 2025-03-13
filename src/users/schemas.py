@@ -30,7 +30,7 @@ class Token(BaseModel):
 
 class UserCreate(BaseModel):
     email: Annotated[str, Field(min_length=6, max_length=50)]
-    password: Annotated[str, Field(min_length=8, max_length=25)]
+    password: Annotated[str, Field(min_length=6, max_length=25)]
 
 
 class UserResponse(BaseModel):
