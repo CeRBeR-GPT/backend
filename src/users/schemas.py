@@ -1,10 +1,8 @@
 import uuid
-from typing import Annotated, List
 
-from pydantic import BaseModel
-from pydantic.v1 import Field
+from typing import Annotated
+from pydantic import BaseModel, Field
 
-from src.transactions.schemas import TransactionResponse
 from src.users.models import Plans
 
 
