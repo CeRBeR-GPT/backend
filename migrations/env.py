@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from src.database import Base
 from src.users.models import User, VerifyCode, Plans  # noqa
 from src.transactions.models import Transaction  # noqa
-from src.ai_assistant.models import UserMessage, AssistantMessage, Chat  # noqa
+from src.ai_chat.models import UserMessage, AssistantMessage, Chat  # noqa
 
 from config_data.config import Config, load_config
 

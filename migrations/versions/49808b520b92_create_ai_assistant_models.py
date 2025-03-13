@@ -1,4 +1,4 @@
-"""Create ai_assistant models
+"""Create ai_chat models
 
 Revision ID: 49808b520b92
 Revises: 537ead03209d
