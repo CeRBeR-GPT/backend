@@ -13,14 +13,14 @@ class TransactionRepository:
             self, transaction_id: str, user_id: uuid.UUID, idempotency_key: uuid.UUID, plan: Plans, amount: float
     ) -> Transaction:
         async with async_session() as session:
-            query = insert(Transaction).values(
+            stmt = insert(Transaction).values(
                 id=transaction_id,
                 idempotency_key=idempotency_key,
                 user_id=user_id,
                 plan=plan,
                 amount=amount
             )
-            await session.execute(query)
+            await session.execute(stmt)
             await session.commit()
 
         return await self.get_transaction_by_id(transaction_id)

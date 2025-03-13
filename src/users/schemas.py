@@ -1,10 +1,8 @@
 import uuid
-from typing import Annotated, List
 
-from pydantic import BaseModel
-from pydantic.v1 import Field
+from typing import Annotated
+from pydantic import BaseModel, Field
 
-from src.transactions.schemas import TransactionResponse
 from src.users.models import Plans
 
 
@@ -32,7 +30,7 @@ class Token(BaseModel):
 
 class UserCreate(BaseModel):
     email: Annotated[str, Field(min_length=6, max_length=50)]
-    password: Annotated[str, Field(min_length=8, max_length=25)]
+    password: Annotated[str, Field(min_length=6, max_length=25)]
 
 
 class UserResponse(BaseModel):

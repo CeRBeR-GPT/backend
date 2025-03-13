@@ -21,7 +21,7 @@ def send_verification_code(email: str) -> int:
     msg = MIMEMultipart()
     msg['From'] = email_sender.EMAIL_NAME
     msg['To'] = email
-    msg['Subject'] = "Регистрация в ToDo"
+    msg['Subject'] = "Регистрация в AI-Chat"
 
     code = _generate_code()
     body = f"Ваш код подтверждения: {code}\n\nЭто сообщение отправлено автоматически."
