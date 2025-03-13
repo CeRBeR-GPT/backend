@@ -149,6 +149,7 @@ class UserService:
     def create_access_token(self, user: User) -> str:
         jwt_payload = {
             "sub": user.email,
+            "uuid": str(user.user_tokens_id)
         }
         return self.create_jwt(
             token_type=ACCESS_TOKEN_TYPE,
@@ -158,7 +159,8 @@ class UserService:
 
     def create_refresh_token(self, user: User) -> str:
         jwt_payload = {
-            "sub": user.email
+            "sub": user.email,
+            "uuid": str(user.user_tokens_id)
         }
         return self.create_jwt(
             token_type=REFRESH_TOKEN_TYPE,
@@ -184,6 +186,7 @@ class UserService:
                 raise TokenTypeException(token_type, expected_token_type)
 
             email: str = payload.get("sub")
+            tokens_id = uuid.UUID(payload.get("uuid"))
             if email is None:
                 raise CredentialException()
             token_data = TokenData(email=email)
@@ -194,7 +197,7 @@ class UserService:
             raise CredentialException()
 
         user = await self.repository.get_user_by_email(token_data.email)
-        if user is None:
+        if user is None or user.user_tokens_id != tokens_id:
             raise CredentialException()
 
         return user
@@ -205,7 +208,7 @@ class UserService:
 
         return await self.repository.create_user(user)
 
-    async def edit_user_password(self, user: User, password: str) -> None:
+    async def edit_user_password(self, user: User, password: str) -> User:
         return await self.repository.edit_password(user, password)
 
     async def delete_user(self, user: User) -> None:

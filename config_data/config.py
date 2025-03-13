@@ -37,8 +37,9 @@ class EmailSender:
 
 @dataclass
 class VariablesData:
-    BASE_URL: str
+    BACKEND_HOST: str
     FRONTEND_REDIRECT_URL: str
+    FRONTEND_HOST: str
     MODE: str
 
 
@@ -108,8 +109,9 @@ def load_config(path: str | None = None) -> Config:
             MAX_CODE=int(env("MAX_CODE"))
         ),
         variablesData=VariablesData(
-            BASE_URL=env("BASE_URL"),
+            BACKEND_HOST=env("BACKEND_HOST"),
             FRONTEND_REDIRECT_URL=env("FRONTEND_REDIRECT_URL"),
+            FRONTEND_HOST=env("FRONTEND_HOST"),
             MODE=env("MODE"),
         ),
         secrets=Secrets(

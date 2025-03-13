@@ -1,12 +1,14 @@
 import uuid
-from typing import List
 
+from copy import deepcopy
+from typing import List
 from yookassa import Payment, Configuration
 from yookassa.domain.response import PaymentResponse
 
 from src.transactions.exceptions import TransactionNotFoundException, FreePlanException, WeakerPlanException
 from src.transactions.models import Transaction
 from src.transactions.repositories import TransactionRepository
+from src.transactions.schemas import PlanResponse
 
 from src.users.models import Plans, plan_settings, User
 from config_data.config import Config, load_config
@@ -49,7 +51,7 @@ class TransactionService:
 
         amount = new_plan_about["price"]
         idempotency_key = uuid.uuid4()
-        return_url = f"{settings.variablesData.BASE_URL}/transaction/{idempotency_key}"
+        return_url = settings.variablesData.FRONTEND_HOST
         transaction = self.create_yookassa_transaction(
             idempotency_key,
             amount,
@@ -76,3 +78,12 @@ class TransactionService:
 
     async def get_all_user_transactions(self, user: User) -> List[Transaction]:
         return await self.repository.get_all_user_transaction(user.id)
+
+    async def get_plans_list(self) -> List[PlanResponse]:
+        response: List[PlanResponse] = []
+        for key, data in plan_settings.items():
+            for_pydantic_data = deepcopy(data)
+            for_pydantic_data["name"] = key
+            response.append(PlanResponse(**for_pydantic_data))
+
+        return response

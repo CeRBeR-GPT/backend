@@ -3,7 +3,7 @@ import uuid
 from fastapi import APIRouter, Depends, Request
 from typing import Annotated, List
 
-from src.transactions.schemas import TransactionResponse, TransactionURLResponse, CheckConfirmedResponse
+from src.transactions.schemas import TransactionResponse, TransactionURLResponse, CheckConfirmedResponse, PlanResponse
 from src.transactions.services import TransactionService
 
 from src.users.models import User, Plans
@@ -11,6 +11,11 @@ from src.users.schemas import UserResponse
 from src.users.services import UserService
 
 router = APIRouter(tags=["transaction"], prefix="/transaction")
+
+
+@router.get("/plans", response_model=List[PlanResponse])
+async def get_all_plans() -> List[PlanResponse]:
+    return await TransactionService().get_plans_list()
 
 
 @router.get("/all", response_model=List[TransactionResponse])

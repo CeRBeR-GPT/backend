@@ -58,12 +58,16 @@ class UserRepository:
 
         return user
 
-    async def edit_password(self, user: User, password: str) -> None:
+    async def edit_password(self, user: User, password: str) -> User:
         async with async_session() as session:
-            new_hashed_password = jwt_settings.hash_password(password)
-            stmt = update(User).where(User.id == user.id).values(password_hash=new_hashed_password)
+            stmt = update(User).where(User.id == user.id).values(
+                user_tokens_id=uuid.uuid4(),
+                password_hash=jwt_settings.hash_password(password)
+            )
             await session.execute(stmt)
             await session.commit()
+
+        return await self.get_user_by_email(user.email)
 
     async def get_user_by_email(self, email: str) -> Optional[User]:
         async with async_session() as session:

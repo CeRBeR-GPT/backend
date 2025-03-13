@@ -87,6 +87,7 @@ class User(Base):
     plan: Mapped[Plans] = mapped_column(default=Plans.default)
     message_length_limit: Mapped[int] = mapped_column(default=plan_settings["default"]["max_length"])
     message_count_limit: Mapped[int] = mapped_column(default=plan_settings["default"]["count_limit"])
+    user_tokens_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     is_admin: Mapped[bool] = mapped_column(default=False)
     is_verified: Mapped[bool] = mapped_column(default=False)
     is_active: Mapped[bool] = mapped_column(default=True)
