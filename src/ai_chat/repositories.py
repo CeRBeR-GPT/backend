@@ -1,4 +1,6 @@
 import uuid
+from typing import List
+
 from sqlalchemy import insert, select, update, delete, and_
 
 from src.ai_chat.models import Chat, Message, MessageBelong
@@ -42,6 +44,14 @@ class AIChatRepository:
             query = select(Message).where(Message.id == message_id)
             result = await session.execute(query)
             message = result.scalars().first()
+
+        return message
+
+    async def get_all_messages_by_chat(self, chat_id: uuid.UUID) -> List[Message]:
+        async with async_session() as session:
+            query = select(Message).where(Message.chat_id == chat_id)
+            result = await session.execute(query)
+            message = result.mapp
 
         return message
 

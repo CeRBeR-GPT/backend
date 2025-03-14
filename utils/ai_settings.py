@@ -1,10 +1,10 @@
 import g4f
 from typing import List, Dict
 
-g4f.debug.logging = False  # Включите отладочное логирование G4F (для более подробной информации об ошибках)
+g4f.debug.logging = False
 
 
-def generate_response(user_message: str, history: List[Dict]) -> str:
+def generate_ai_response(user_message: str, history: List[Dict]) -> str:
     try:
         history.append({"role": "user", "content": user_message})
 
@@ -26,7 +26,7 @@ if __name__ == "__main__":
 
     while True:
         query = input("Введите ваше сообщение: ")
-        print(generate_response(query, messages))
+        print(generate_ai_response(query, messages))
         print()
         print(messages)
         print()
