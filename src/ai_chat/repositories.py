@@ -1,7 +1,7 @@
 import uuid
-from sqlalchemy import insert, select, update, delete
+from sqlalchemy import insert, select, update, delete, and_
 
-from src.ai_chat.models import Chat, UserMessage, AssistantMessage
+from src.ai_chat.models import Chat, Message, MessageBelong
 from src.database import async_session
 
 
@@ -37,26 +37,42 @@ class AIChatRepository:
             await session.execute(stmt)
             await session.commit()
 
-    async def get_user_message_by_id(self, message_id: uuid.UUID) -> UserMessage:
+    async def get_message_by_id(self, message_id: uuid.UUID) -> Message:
         async with async_session() as session:
-            query = select(UserMessage).where(UserMessage.id == message_id)
+            query = select(Message).where(Message.id == message_id)
             result = await session.execute(query)
             message = result.scalars().first()
 
         return message
 
-    async def get_assistant_message_by_id(self, message_id: uuid.UUID) -> UserMessage:
+    async def get_user_message_by_id(self, message_id: uuid.UUID) -> Message:
         async with async_session() as session:
-            query = select(AssistantMessage).where(AssistantMessage.id == message_id)
+            query = select(Message).where(
+                and_(Message.id == message_id, Message.message_belong == MessageBelong.user_message)
+            )
             result = await session.execute(query)
             message = result.scalars().first()
 
         return message
 
-    async def create_new_user_message(self, text: str, chat_id: uuid.UUID, user_id: uuid.UUID) -> UserMessage:
+    async def get_assistant_message_by_id(self, message_id: uuid.UUID) -> Message:
+        async with async_session() as session:
+            query = select(Message).where(
+                and_(Message.id == message_id, Message.message_belong == MessageBelong.assistant_message)
+            )
+            result = await session.execute(query)
+            message = result.scalars().first()
+
+        return message
+
+    async def create_new_message(
+            self, text: str, chat_id: uuid.UUID, user_id: uuid.UUID, message_belong: MessageBelong
+    ) -> Message:
         message_id = uuid.uuid4()
         async with async_session() as session:
-            stmt = insert(UserMessage).values(id=message_id, text=text, chat_id=chat_id, user_id=user_id)
+            stmt = insert(Message).values(
+                id=message_id, text=text, chat_id=chat_id, user_id=user_id, message_belong=message_belong
+            )
             await session.execute(stmt)
             await session.commit()
 
