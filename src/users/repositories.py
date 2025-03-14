@@ -91,6 +91,7 @@ class UserRepository:
         async with async_session() as session:
             stmt = update(User).where(User.id == user_id).values(
                 plan=plan,
+                available_message_count=new_message_count_limit,
                 message_length_limit=new_message_length_limit,
                 message_count_limit=new_message_count_limit
             )

@@ -37,8 +37,6 @@ class UserResponse(BaseModel):
     id: uuid.UUID
     email: Annotated[str, Field(min_length=6, max_length=50)]
     plan: Plans
+    available_message_count: int
     message_length_limit: int
     message_count_limit: int
-
-    class Config:
-        orm_mode = True

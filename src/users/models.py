@@ -86,6 +86,7 @@ class User(Base):
     email: Mapped[str] = mapped_column(unique=True)
     plan: Mapped[Plans] = mapped_column(default=Plans.default)
     message_length_limit: Mapped[int] = mapped_column(default=plan_settings["default"]["max_length"])
+    available_message_count: Mapped[int] = mapped_column(default=plan_settings["default"]["count_limit"])
     message_count_limit: Mapped[int] = mapped_column(default=plan_settings["default"]["count_limit"])
     user_tokens_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     is_admin: Mapped[bool] = mapped_column(default=False)
@@ -100,6 +101,7 @@ class User(Base):
             "email": self.email,
             "is_admin": self.is_admin,
             "plan": self.plan.value,
+            "available_message_count": self.available_message_count,
             "message_length_limit": self.message_length_limit,
             "message_count_limit": self.message_count_limit,
             "is_verified": self.is_verified,
