@@ -1,7 +1,5 @@
-from typing import List, Dict
-
 import g4f
-import traceback
+from typing import List, Dict
 
 g4f.debug.logging = False  # Включите отладочное логирование G4F (для более подробной информации об ошибках)
 
@@ -23,12 +21,12 @@ def generate_response(user_message: str, history: List[Dict]) -> str:
         return f"Произошла ошибка при генерации ответа. Пожалуйста, попробуйте позже.  Детали: {e}"
 
 
-def main():
-    user_messages = []
+if __name__ == "__main__":
+    messages = []
 
     while True:
-        pass
-
-
-if __name__ == "__main__":
-    main()
+        query = input("Введите ваше сообщение: ")
+        print(generate_response(query, messages))
+        print()
+        print(messages)
+        print()
