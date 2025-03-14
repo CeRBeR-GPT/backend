@@ -17,7 +17,7 @@ router = APIRouter(tags=["chat"], prefix="/chat")
 manager = ConnectionManager()
 
 
-@router.post("/new_chat", response_model=AIChatResponse)
+@router.post("/new", response_model=AIChatResponse)
 async def create_new_chat(
         current_user: Annotated[User, Depends(UserService().get_current_user)],
         name: str
@@ -26,7 +26,7 @@ async def create_new_chat(
     return AIChatResponse(**new_chat.to_dict())
 
 
-@router.get("/chat/{chat_id}", response_model=AIChatResponse)
+@router.get("/{chat_id}", response_model=AIChatResponse)
 async def get_chat_by_id(
         current_user: Annotated[User, Depends(UserService().get_current_user)],
         chat_id: uuid.UUID,
@@ -38,7 +38,7 @@ async def get_chat_by_id(
     return AIChatResponse(**chat.to_dict())
 
 
-@router.put("/chat/{chat_id}", response_model=AIChatResponse)
+@router.put("/{chat_id}", response_model=AIChatResponse)
 async def edit_chat_name(
         current_user: Annotated[User, Depends(UserService().get_current_user)],
         chat_id: uuid.UUID,
@@ -48,7 +48,7 @@ async def edit_chat_name(
     return AIChatResponse(**updated_chat.to_dict())
 
 
-@router.delete("/chat/{chat_id}", response_model=SuccessfulResponse)
+@router.delete("/{chat_id}", response_model=SuccessfulResponse)
 async def delete_chat(
         current_user: Annotated[User, Depends(UserService().get_current_user)],
         chat_id: uuid.UUID
