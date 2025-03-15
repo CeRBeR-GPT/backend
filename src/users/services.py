@@ -177,7 +177,7 @@ class UserService:
 
         return user
 
-    async def validate_user(self, expected_token_type: str, token: str | bytes) -> User:
+    async def validate_user(self, expected_token_type: str = ACCESS_TOKEN_TYPE, token: str | bytes = "") -> User:
 
         try:
             payload = decode_jwt(token=token)

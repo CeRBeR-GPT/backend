@@ -1,7 +1,7 @@
 import uuid
 
 from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
-from typing import Annotated
+from typing import Annotated, List
 
 from src.ai_chat.models import MessageBelong
 from src.ai_chat.schemas import AIChatResponse
@@ -26,6 +26,14 @@ async def create_new_chat(
     return AIChatResponse(**new_chat.to_dict())
 
 
+@router.get("/all", response_model=List[AIChatResponse])
+async def get_all_user_chats(
+        current_user: Annotated[User, Depends(UserService().get_current_user)]
+) -> List[AIChatResponse]:
+    chats = await AIChatService().get_all_user_chats(current_user)
+    return list(map(lambda x: AIChatResponse(**x.to_dict()), chats))
+
+
 @router.get("/{chat_id}", response_model=AIChatResponse)
 async def get_chat_by_id(
         current_user: Annotated[User, Depends(UserService().get_current_user)],
@@ -48,6 +56,15 @@ async def edit_chat_name(
     return AIChatResponse(**updated_chat.to_dict())
 
 
+@router.delete("/{chat_id}/clear", response_model=AIChatResponse)
+async def clear_chat(
+        current_user: Annotated[User, Depends(UserService().get_current_user)],
+        chat_id: uuid.UUID,
+) -> AIChatResponse:
+    updated_chat = await AIChatService().delete_all_chat_messages(current_user, chat_id)
+    return AIChatResponse(**updated_chat.to_dict())
+
+
 @router.delete("/{chat_id}", response_model=SuccessfulResponse)
 async def delete_chat(
         current_user: Annotated[User, Depends(UserService().get_current_user)],
@@ -59,12 +76,13 @@ async def delete_chat(
 
 @router.websocket("/ws/{chat_id}")
 async def websocket_endpoint(
-        current_user: Annotated[User, Depends(UserService().get_current_user)],
         websocket: WebSocket,
-        chat_id: uuid.UUID
+        chat_id: uuid.UUID,
+        token: str
 ):
-    await manager.connect(websocket)
+    current_user = await UserService().validate_user(token=token)
     history = await AIChatService().get_chat_history(current_user, chat_id)
+    await manager.connect(websocket)
 
     try:
         while True:

@@ -52,6 +52,13 @@ class AIChatService:
 
         return chat
 
+    async def delete_all_chat_messages(self, user: User, chat_id: uuid.UUID) -> Chat:
+        chat = await self.get_chat_by_id(user, chat_id)
+        return await self.repository.delete_all_chat_messages(chat.id)
+
+    async def get_all_user_chats(self, user: User) -> List[Chat]:
+        return await self.repository.get_all_user_chats(user.id)
+
     async def create_new_chat(self, user: User, name: str) -> Chat:
         return await self.repository.create_new_chat(name, user.id)
 

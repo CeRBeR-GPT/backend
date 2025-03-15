@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Chat</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f9;
+        }
+        #chat {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        #messages {
+            height: 300px;
+            overflow-y: auto;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+        }
+        #messageInput {
+            width: calc(100% - 90px);
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        #sendButton {
+            width: 80px;
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        #sendButton:hover {
+            background-color: #0056b3;
+        }
+        pre {
+            background-color: #f8f8f8;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        code {
+            font-family: Consolas, monospace;
+            color: #d63384;
+        }
+    </style>
+</head>
+<body>
+<div id="chat">
+    <div id="messages"></div>
+    <input type="text" id="messageInput" placeholder="Type your message...">
+    <button id="sendButton">Send</button>
+</div>
+
+<!-- Подключаем библиотеку marked.js -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+<script>
+    let ws;  // Объявляем WebSocket глобально
+
+    // Функция для загрузки истории сообщений
+    async function loadChatHistory(chatId, token) {
+        try {
+            const response = await fetch(`http://localhost:8000/chat/${chatId}`, {
+                headers: {
+                    "Authorization": `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            return data.messages;  // Возвращаем массив сообщений
+        } catch (error) {
+            console.error("Failed to load chat history:", error);
+            return [];  // Возвращаем пустой массив в случае ошибки
+        }
+    }
+
+    // Функция для добавления сообщения в чат с поддержкой Markdown
+    function addMessageToChat(message, sender) {
+        const messages = document.getElementById("messages");
+
+        // Создаем контейнер для сообщения
+        const messageElement = document.createElement("div");
+        messageElement.classList.add("message");
+
+        // Добавляем отправителя
+        const senderElement = document.createElement("div");
+        senderElement.textContent = `${sender}:`;
+        senderElement.style.fontWeight = "bold";
+        messageElement.appendChild(senderElement);
+
+        // Преобразуем Markdown в HTML
+        const contentElement = document.createElement("div");
+        contentElement.innerHTML = marked.parse(message);  // Используем marked.js
+        messageElement.appendChild(contentElement);
+
+        // Добавляем сообщение в чат
+        messages.appendChild(messageElement);
+        messages.scrollTop = messages.scrollHeight;  // Автопрокрутка
+    }
+
+    // Инициализация чата
+    async function initializeChat() {
+        const token = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoiYWNjZXNzIiwic3ViIjoic3RyaW5nIiwidXVpZCI6ImE5YmY1NDYyLWMwYTEtNDdmYy05OTgyLTZlZDc4MGIxNjgzNSIsImV4cCI6MTc0MjEyMTE0NSwiaWF0IjoxNzQyMDM0NzQ1fQ.QNQTatBvWXD03pkxnConcWubbiU1x93hidIlUc2zPisCxQRN20J4L7vLDQ_VYTiT588oC3h69X0OqzpN8X-Jj0We9ngbg1SAeypyLi6S2SdNBlnxqAzpVFC55XmC0-nubjjqUYiJwFkye-vDeASt-xOQWJvArvQm27PQZLHXNCFA5J-n3-cd_OYH4Xqm3I4hnGO4jdXJjx-RyA9UbD1r8dc772TUD9QAZ-n1UhXcI28gh_IMsc2s_sIr6B_XrS6URBz1eZR-KqxuA57TcDxREmYNDDxD0YxU8Arkqrl0-uqTdcUVreZ_UCODFv22nhCZYT26Ct3c4sAhiEj8dy0KVw";
+        const chatId = "80c79797-d145-4c02-92e8-35b64d5e3eb3";  // Ваш chat_id
+
+        // Загружаем историю сообщений
+        const messages = await loadChatHistory(chatId, token);
+
+        // Отображаем историю сообщений
+        messages.forEach(msg => {
+            const sender = msg.message_belong === "user" ? "You" : "Assistant";
+            addMessageToChat(msg.text, sender);
+        });
+
+        // Создаем WebSocket-соединение
+        ws = new WebSocket(`ws://localhost:8000/chat/ws/${chatId}?token=${token}`);
+
+        ws.onopen = () => {
+            console.log("WebSocket connection established");
+        };
+
+        ws.onmessage = (event) => {
+            addMessageToChat(event.data, "Assistant");
+        };
+
+        ws.onerror = (error) => {
+            console.error("WebSocket error:", error);
+        };
+
+        ws.onclose = () => {
+            console.log("WebSocket connection closed");
+        };
+
+        // Обработчик кнопки отправки сообщения
+        document.getElementById("sendButton").onclick = () => {
+            const input = document.getElementById("messageInput");
+            const message = input.value;
+            if (message) {
+                addMessageToChat(message, "You");
+                ws.send(message);
+                input.value = "";
+            }
+        };
+
+        // Обработчик нажатия Enter в поле ввода
+        document.getElementById("messageInput").onkeypress = (event) => {
+            if (event.key === "Enter") {
+                document.getElementById("sendButton").click();
+            }
+        };
+    }
+
+    // Инициализация чата при загрузке страницы
+    window.onload = initializeChat;
+</script>
+</body>
+</html>

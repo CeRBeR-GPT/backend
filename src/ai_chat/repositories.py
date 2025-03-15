@@ -16,6 +16,14 @@ class AIChatRepository:
 
         return chat
 
+    async def get_all_user_chats(self, user_id: uuid.UUID) -> List[Chat]:
+        async with async_session() as session:
+            query = select(Chat).where(Chat.user_id == user_id)
+            result = await session.execute(query)
+            chats = result.scalars().all()
+
+        return chats
+
     async def create_new_chat(self, name: str, user_id: uuid.UUID) -> Chat:
         chat_id = uuid.uuid4()
         async with async_session() as session:
@@ -39,6 +47,14 @@ class AIChatRepository:
             await session.execute(stmt)
             await session.commit()
 
+    async def delete_all_chat_messages(self, chat_id: uuid.UUID) -> Chat:
+        async with async_session() as session:
+            stmt = delete(Message).where(Message.chat_id == chat_id)
+            await session.execute(stmt)
+            await session.commit()
+
+        return await self.get_chat_by_id(chat_id)
+
     async def get_message_by_id(self, message_id: uuid.UUID) -> Message:
         async with async_session() as session:
             query = select(Message).where(Message.id == message_id)
@@ -51,9 +67,9 @@ class AIChatRepository:
         async with async_session() as session:
             query = select(Message).where(Message.chat_id == chat_id)
             result = await session.execute(query)
-            message = result.mapp
+            messages = result.scalars().all()
 
-        return message
+        return messages
 
     async def get_user_message_by_id(self, message_id: uuid.UUID) -> Message:
         async with async_session() as session:
