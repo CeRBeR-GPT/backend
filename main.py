@@ -1,9 +1,12 @@
 import os
 import uvicorn
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
+
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 
 from starlette.middleware import Middleware
 from starlette.middleware.sessions import SessionMiddleware
@@ -58,6 +61,14 @@ app.include_router(auth_router)
 app.include_router(user_router)
 app.include_router(chat_router)
 app.include_router(transaction_router)
+
+templates = Jinja2Templates(directory="templates")
+
+
+@app.get("/", response_class=HTMLResponse)
+async def get_chat_page(request: Request):
+    return templates.TemplateResponse("chat.html", {"request": request})
+
 
 if __name__ == "__main__":
     uvicorn.run(

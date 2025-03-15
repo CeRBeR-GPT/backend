@@ -54,5 +54,5 @@ class Chat(Base):
             "name": self.name,
             "user_id": self.user_id,
             "created_at": self.created_at,
-            "messages": [message.to_dict() for message in self.messages],
+            "messages": sorted((message.to_dict() for message in self.messages), key=lambda x: x["created_at"])
         }

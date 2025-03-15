@@ -78,10 +78,10 @@ async def delete_chat(
 async def websocket_endpoint(
         websocket: WebSocket,
         chat_id: uuid.UUID,
+        token: str
 ):
-    current_user = await UserService().validate_user(token=websocket.headers.get("authorization").split()[1])
+    current_user = await UserService().validate_user(token=token)
     history = await AIChatService().get_chat_history(current_user, chat_id)
-
     await manager.connect(websocket)
 
     try:
