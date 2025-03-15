@@ -131,7 +131,8 @@
         });
 
         // Создаем WebSocket-соединение
-        ws = new WebSocket(`https://api-gpt.energy-cerber.ru/chat/ws/${chatId}?token=${token}`);
+        ws = new WebSocket(`wss://api-gpt.energy-cerber.ru/chat/ws/${chatId}?token=${token}`); // Secure WebSocket
+
 
         ws.onopen = () => {
             console.log("WebSocket connection established");
