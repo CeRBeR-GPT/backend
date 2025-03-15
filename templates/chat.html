@@ -74,7 +74,7 @@
     // Функция для загрузки истории сообщений
     async function loadChatHistory(chatId, token) {
         try {
-            const response = await fetch(`http://localhost:8000/chat/${chatId}`, {
+            const response = await fetch(`https://api-gpt.energy-cerber.ru/chat/${chatId}`, {
                 headers: {
                     "Authorization": `Bearer ${token}`
                 }
@@ -131,7 +131,7 @@
         });
 
         // Создаем WebSocket-соединение
-        ws = new WebSocket(`ws://localhost:8000/chat/ws/${chatId}?token=${token}`);
+        ws = new WebSocket(`https://api-gpt.energy-cerber.ru/chat/ws/${chatId}?token=${token}`);
 
         ws.onopen = () => {
             console.log("WebSocket connection established");
