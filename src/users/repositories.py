@@ -1,7 +1,7 @@
 import uuid
 
 from typing import Optional, List
-from sqlalchemy import insert, select, delete, update
+from sqlalchemy import insert, select, delete, update, column
 
 from config_data.config import Config, load_config
 from utils import jwt_settings
@@ -83,6 +83,12 @@ class UserRepository:
             users = result.scalars().all()
 
             return users
+
+    async def reset_available_messages(self) -> None:
+        async with async_session() as session:
+            stmt = update(User).values(available_message_count=column('message_count_limit'))
+            await session.execute(stmt)
+            await session.commit()
 
     async def update_user_plan(self, user_id: uuid.UUID, plan: Plans) -> User:
         new_plan_about = plan_settings[plan.value]

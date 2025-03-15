@@ -16,9 +16,11 @@ from src.users.schemas import UserCreate, TokenData
 from src.users.exceptions import CredentialException, TokenTypeException, UserNotFoundException, AccessException, \
     EmailExistsException, IncorrectEmailAddressException, IncorrectVerifyCodeException, EmailSenderException, \
     OAuthServiceNotFoundException, InvalidOAuthStateException
-from utils.email_sender import send_verification_code
 
+from tasks.celery_worker import task_send_to_email
 from config_data.config import Config, load_config
+
+from utils.email_sender import generate_confirmation_mode
 from utils.jwt_settings import validate_password, decode_jwt, encode_jwt
 from utils.oauth2_settings import get_google_oauth_email, get_yandex_oauth_email, get_github_oauth_email
 
@@ -107,7 +109,8 @@ class UserService:
             raise EmailExistsException()
 
         try:
-            code = send_verification_code(email)
+            code = generate_confirmation_mode()
+            task_send_to_email.delay(email, code)
             potential_code = await self.repository.get_verify_code_by_email(email)
             if potential_code is not None:
                 await self.repository.update_verify_code(email, code)
