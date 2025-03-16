@@ -1,7 +1,10 @@
+import asyncio
 import uuid
 
 from fastapi import WebSocket, WebSocketDisconnect
 from typing import List, Dict
+
+from starlette.websockets import WebSocketState
 
 from src.ai_chat.exceptions import ChatNotFoundException, MessageNotFoundException
 from src.ai_chat.models import Chat, Message, MessageBelong
@@ -16,21 +19,30 @@ from utils.ai_settings import generate_ai_response
 class ConnectionManager:
     def __init__(self):
         self.active_connections: List[WebSocket] = []
+        self.lock = asyncio.Lock()
 
     async def connect(self, websocket: WebSocket):
         await websocket.accept()
-        self.active_connections.append(websocket)
+        async with self.lock:
+            self.active_connections.append(websocket)
+            print(f"Client connected: {websocket.client}")
 
-    def disconnect(self, websocket: WebSocket):
-        self.active_connections.remove(websocket)
+    async def disconnect(self, websocket: WebSocket):
+        async with self.lock:
+            if websocket in self.active_connections:
+                self.active_connections.remove(websocket)
+                print(f"Client disconnected: {websocket.client}")
 
     @staticmethod
     async def send_personal_message(message: str, websocket: WebSocket):
-        await websocket.send_text(message)
+        try:
+            if websocket.client_state == WebSocketState.CONNECTED:
+                await websocket.send_text(message)
+            else:
+                print(f"! Attempted to send message to disconnected client: {websocket.client}")
 
-    async def broadcast(self, message: str):
-        for connection in self.active_connections:
-            await connection.send_text(message)
+        except WebSocketDisconnect:
+            print(f"Client disconnected during send: {websocket.client}")
 
 
 manager = ConnectionManager()
@@ -46,11 +58,8 @@ class AIChatService:
 
         try:
             while True:
-
                 user_message = await websocket.receive_text()
-                current_user = await UserRepository().update_available_messages_count(
-                    current_user, current_user.available_message_count - 1
-                )
+                print(f"Received message from {websocket.client}: {user_message}")
 
                 if current_user.available_message_count <= 0:
                     await manager.send_personal_message(
@@ -59,25 +68,37 @@ class AIChatService:
                     )
                     continue
 
+                current_user = await UserRepository().update_available_messages_count(
+                    current_user, current_user.available_message_count - 1
+                )
                 await AIChatService().create_new_message(
                     current_user, user_message, chat_id, MessageBelong.user_message
                 )
                 history.append({"role": "user", "content": user_message})
 
-                print("Generating AI response...")
-                ai_response = generate_ai_response(user_message, history)
-                print("Successful get response!")
+                ai_response = await asyncio.to_thread(generate_ai_response, user_message, history)
+
                 await AIChatService().create_new_message(
                     current_user, ai_response, chat_id, MessageBelong.assistant_message
                 )
                 history.append({"role": "assistant", "content": ai_response})
-                print("Add response to database")
 
                 await manager.send_personal_message(ai_response, websocket)
 
         except WebSocketDisconnect:
-            manager.disconnect(websocket)
-            print(f"Websocket client disconnected")
+            print(f"Websocket client disconnected: {websocket.client}")
+            await manager.disconnect(websocket)
+        except Exception as e:
+            print(f"!!! Error in websocket handler: {e}")
+
+            await UserRepository().update_available_messages_count(
+                current_user, current_user.available_message_count + 1
+            )
+            await manager.send_personal_message(
+                "На сервере произошла ошибка! Попробуйте повторить запрос (с Вашего счёта он не был списан)",
+                websocket
+            )
+            await manager.disconnect(websocket)
 
     async def get_chat_history(self, user: User, chat_id: uuid.UUID) -> List[Dict]:
         chat = await self.get_chat_by_id(user, chat_id)
