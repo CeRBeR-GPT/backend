@@ -1,6 +1,7 @@
+import datetime
 import uuid
 
-from typing import Optional
+from typing import Optional, List
 from sqlalchemy import insert, select, delete, update, column
 
 from config_data.config import Config, load_config
@@ -76,12 +77,6 @@ class UserRepository:
             user = result.scalars().first()
         return user
 
-    async def reset_available_messages(self) -> None:
-        async with async_session() as session:
-            stmt = update(User).values(available_message_count=column('message_count_limit'))
-            await session.execute(stmt)
-            await session.commit()
-
     async def update_available_messages_count(self, user_id: uuid.UUID) -> None:
         async with async_session() as session:
             stmt = update(User).where(User.id == user_id).values(
@@ -90,6 +85,21 @@ class UserRepository:
             await session.execute(stmt)
             await session.commit()
 
+    async def reset_available_messages(self) -> None:
+        async with async_session() as session:
+            stmt = update(User).values(available_message_count=column('message_count_limit'))
+            await session.execute(stmt)
+            await session.commit()
+
+    async def reset_users_plan_to_default(self):
+        current_date = datetime.date.today()
+        timedelta = datetime.timedelta(days=28)
+        users: List[User] = await self.get_all_users()
+
+        for user in users:
+            if user.plan_purchase_date + timedelta < current_date:
+                await self.update_user_plan(user.id, Plans.default)
+
     async def update_user_plan(self, user_id: uuid.UUID, plan: Plans) -> User:
         new_plan_about = plan_settings[plan.value]
         new_message_length_limit = new_plan_about["max_length"]
@@ -97,6 +107,7 @@ class UserRepository:
         async with async_session() as session:
             stmt = update(User).where(User.id == user_id).values(
                 plan=plan,
+                plan_purchase_date=datetime.date.today(),
                 available_message_count=new_message_count_limit,
                 message_length_limit=new_message_length_limit,
                 message_count_limit=new_message_count_limit
@@ -122,6 +133,14 @@ class UserRepository:
             user = result.scalars().first()
 
         return user
+
+    async def get_all_users(self) -> List[User]:
+        async with async_session() as session:
+            query = select(User)
+            result = await session.execute(query)
+            users = result.scalars().all()
+
+            return users
 
     async def delete_user(self, user: User) -> None:
         async with async_session() as session:

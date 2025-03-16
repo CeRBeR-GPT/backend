@@ -25,14 +25,20 @@ def task_generate_ai_response(message, history) -> str:
 
 
 @celery_app.task
-def task_daily_reset_available_messages():
-    return asyncio.run(UserRepository().reset_available_messages())
+def task_daily_users_update():
+    asyncio.run(daily_users_update())
+
+
+async def daily_users_update():
+    repo = UserRepository()
+    await repo.reset_available_messages()
+    await repo.reset_users_plan_to_default()
 
 
 celery_app.conf.beat_schedule = {
     'task-daily-messages': {
-        'task': 'tasks.celery_worker.task_daily_reset_available_messages',
-        'schedule': crontab(hour="10", minute="25"),
+        'task': 'tasks.celery_worker.task_daily_users_update',
+        'schedule': crontab(hour="21", minute="00"),
     },
 }
 

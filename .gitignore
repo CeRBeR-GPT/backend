@@ -34,6 +34,6 @@ cython_debug/
 /.vscode
 
 /certs/
-/templates/
 /pgdata/
+/templates/
 *.webp
