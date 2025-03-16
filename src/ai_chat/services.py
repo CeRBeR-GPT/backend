@@ -46,7 +46,11 @@ class AIChatService:
 
         try:
             while True:
+
                 user_message = await websocket.receive_text()
+                current_user = await UserRepository().update_available_messages_count(
+                    current_user, current_user.available_message_count - 1
+                )
 
                 if current_user.available_message_count <= 0:
                     await manager.send_personal_message(
@@ -60,15 +64,16 @@ class AIChatService:
                 )
                 history.append({"role": "user", "content": user_message})
 
+                print("Generating AI response...")
                 ai_response = generate_ai_response(user_message, history)
+                print("Successful get response!")
                 await AIChatService().create_new_message(
                     current_user, ai_response, chat_id, MessageBelong.assistant_message
                 )
                 history.append({"role": "assistant", "content": ai_response})
-                await manager.send_personal_message(ai_response, websocket)
+                print("Add response to database")
 
-                current_user.available_message_count -= 1
-                await UserRepository().update_available_messages_count(current_user)
+                await manager.send_personal_message(ai_response, websocket)
 
         except WebSocketDisconnect:
             manager.disconnect(websocket)

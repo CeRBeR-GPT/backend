@@ -77,13 +77,15 @@ class UserRepository:
             user = result.scalars().first()
         return user
 
-    async def update_available_messages_count(self, user: User) -> None:
+    async def update_available_messages_count(self, user: User, new_count) -> User:
         async with async_session() as session:
             stmt = update(User).where(User.id == user.id).values(
-                available_message_count=max(user.available_message_count - 1, 0)
+                available_message_count=max(new_count, 0)
             )
             await session.execute(stmt)
             await session.commit()
+
+        return await self.get_user_by_id(user.id)
 
     async def reset_available_messages(self) -> None:
         async with async_session() as session:
