@@ -68,9 +68,8 @@ class AIChatService:
                     )
                     continue
 
-                current_user = await UserRepository().update_available_messages_count(
-                    current_user, current_user.available_message_count - 1
-                )
+                current_user = await UserRepository().update_available_messages_count(current_user, -1)
+
                 await AIChatService().create_new_message(
                     current_user, user_message, chat_id, MessageBelong.user_message
                 )
@@ -91,9 +90,7 @@ class AIChatService:
         except Exception as e:
             print(f"!!! Error in websocket handler: {e}")
 
-            await UserRepository().update_available_messages_count(
-                current_user, current_user.available_message_count + 1
-            )
+            await UserRepository().update_available_messages_count(current_user, 1)
             await manager.send_personal_message(
                 "На сервере произошла ошибка! Попробуйте повторить запрос (с Вашего счёта он не был списан)",
                 websocket

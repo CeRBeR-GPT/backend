@@ -2,7 +2,7 @@ import datetime
 import uuid
 
 from typing import Optional, List
-from sqlalchemy import insert, select, delete, update, column
+from sqlalchemy import insert, select, delete, update, column, func
 
 from config_data.config import Config, load_config
 from utils import jwt_settings
@@ -77,10 +77,10 @@ class UserRepository:
             user = result.scalars().first()
         return user
 
-    async def update_available_messages_count(self, user: User, new_count) -> User:
+    async def update_available_messages_count(self, user: User, difference: int) -> User:
         async with async_session() as session:
             stmt = update(User).where(User.id == user.id).values(
-                available_message_count=max(new_count, 0)
+                available_message_count=func.greatest(User.available_message_count + difference, 0)
             )
             await session.execute(stmt)
             await session.commit()
