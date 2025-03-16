@@ -1,12 +1,16 @@
 import uuid
 
-from fastapi import WebSocket
+from fastapi import WebSocket, WebSocketDisconnect
 from typing import List, Dict
 
 from src.ai_chat.exceptions import ChatNotFoundException, MessageNotFoundException
 from src.ai_chat.models import Chat, Message, MessageBelong
 from src.ai_chat.repositories import AIChatRepository
 from src.users.models import User
+from src.users.repositories import UserRepository
+from src.users.services import UserService
+
+from utils.ai_settings import generate_ai_response
 
 
 class ConnectionManager:
@@ -20,7 +24,8 @@ class ConnectionManager:
     def disconnect(self, websocket: WebSocket):
         self.active_connections.remove(websocket)
 
-    async def send_personal_message(self, message: str, websocket: WebSocket):
+    @staticmethod
+    async def send_personal_message(message: str, websocket: WebSocket):
         await websocket.send_text(message)
 
     async def broadcast(self, message: str):
@@ -28,8 +33,46 @@ class ConnectionManager:
             await connection.send_text(message)
 
 
+manager = ConnectionManager()
+
+
 class AIChatService:
     repository = AIChatRepository()
+
+    async def run_websocket_worker(self, websocket: WebSocket, chat_id: uuid.UUID, token: str):
+        current_user = await UserService().validate_user(token=token)
+        history = await self.get_chat_history(current_user, chat_id)
+        await manager.connect(websocket)
+
+        try:
+            while True:
+                user_message = await websocket.receive_text()
+
+                if current_user.available_message_count <= 0:
+                    await manager.send_personal_message(
+                        "Превышен суточный лимит доступных сообщений! Вы всегда можете обновить план в профиле!",
+                        websocket
+                    )
+                    continue
+
+                await AIChatService().create_new_message(
+                    current_user, user_message, chat_id, MessageBelong.user_message
+                )
+                history.append({"role": "user", "content": user_message})
+
+                ai_response = generate_ai_response(user_message, history)
+                await AIChatService().create_new_message(
+                    current_user, ai_response, chat_id, MessageBelong.assistant_message
+                )
+                history.append({"role": "assistant", "content": ai_response})
+                await manager.send_personal_message(ai_response, websocket)
+
+                current_user.available_message_count -= 1
+                await UserRepository().update_available_messages_count(current_user.id)
+
+        except WebSocketDisconnect:
+            manager.disconnect(websocket)
+            print(f"Websocket client disconnected")
 
     async def get_chat_history(self, user: User, chat_id: uuid.UUID) -> List[Dict]:
         chat = await self.get_chat_by_id(user, chat_id)

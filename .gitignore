@@ -35,4 +35,5 @@ cython_debug/
 
 /certs/
 /pgdata/
+/templates/
 *.webp
