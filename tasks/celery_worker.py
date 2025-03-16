@@ -1,3 +1,5 @@
+import asyncio
+
 from celery import Celery
 from celery.schedules import crontab
 
@@ -23,14 +25,14 @@ def task_generate_ai_response(message, history) -> str:
 
 
 @celery_app.task
-async def task_daily_reset_available_messages():
-    await UserRepository().reset_available_messages()
+def task_daily_reset_available_messages():
+    return asyncio.run(UserRepository().reset_available_messages())
 
 
 celery_app.conf.beat_schedule = {
     'task-daily-messages': {
         'task': 'tasks.celery_worker.task_daily_reset_available_messages',
-        'schedule': crontab(hour="21", minute="00"),
+        'schedule': crontab(hour="10", minute="25"),
     },
 }
 
