@@ -68,7 +68,7 @@ class AIChatService:
                 await manager.send_personal_message(ai_response, websocket)
 
                 current_user.available_message_count -= 1
-                await UserRepository().update_available_messages_count(current_user.id)
+                await UserRepository().update_available_messages_count(current_user)
 
         except WebSocketDisconnect:
             manager.disconnect(websocket)
