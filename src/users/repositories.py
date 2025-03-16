@@ -1,6 +1,6 @@
 import uuid
 
-from typing import Optional, List
+from typing import Optional
 from sqlalchemy import insert, select, delete, update, column
 
 from config_data.config import Config, load_config
@@ -75,14 +75,6 @@ class UserRepository:
             result = await session.execute(query)
             user = result.scalars().first()
         return user
-
-    async def get_all_users(self) -> List[User]:
-        async with async_session() as session:
-            query = select(User)
-            result = await session.execute(query)
-            users = result.scalars().all()
-
-            return users
 
     async def reset_available_messages(self) -> None:
         async with async_session() as session:

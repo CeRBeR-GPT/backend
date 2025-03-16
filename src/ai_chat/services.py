@@ -8,7 +8,8 @@ from src.ai_chat.models import Chat, Message, MessageBelong
 from src.ai_chat.repositories import AIChatRepository
 from src.users.models import User
 from src.users.services import UserService
-from utils.ai_settings import generate_ai_response
+
+from tasks.celery_worker import task_generate_ai_response
 
 
 class ConnectionManager:
@@ -49,7 +50,7 @@ class AIChatService:
                 )
                 history.append({"role": "user", "content": user_message})
 
-                ai_response = generate_ai_response(user_message, history)
+                ai_response = task_generate_ai_response.delay(user_message, history)
                 await AIChatService().create_new_message(
                     current_user, ai_response, chat_id, MessageBelong.assistant_message
                 )
