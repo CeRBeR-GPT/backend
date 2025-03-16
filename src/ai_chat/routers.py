@@ -1,20 +1,16 @@
 import uuid
 
-from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, WebSocket
 from typing import Annotated, List
 
-from src.ai_chat.models import MessageBelong
 from src.ai_chat.schemas import AIChatResponse
-from src.ai_chat.services import ConnectionManager, AIChatService
+from src.ai_chat.services import AIChatService
 
 from src.users.models import User
 from src.users.schemas import SuccessfulResponse
 from src.users.services import UserService
 
-from utils.ai_settings import generate_ai_response
-
 router = APIRouter(tags=["chat"], prefix="/chat")
-manager = ConnectionManager()
 
 
 @router.post("/new", response_model=AIChatResponse)
@@ -75,31 +71,9 @@ async def delete_chat(
 
 
 @router.websocket("/ws/{chat_id}")
-async def websocket_endpoint(
+async def websocket_worker(
         websocket: WebSocket,
         chat_id: uuid.UUID,
         token: str
 ):
-    current_user = await UserService().validate_user(token=token)
-    history = await AIChatService().get_chat_history(current_user, chat_id)
-    await manager.connect(websocket)
-
-    try:
-        while True:
-            user_message = await websocket.receive_text()
-
-            await AIChatService().create_new_message(
-                current_user, user_message, chat_id, MessageBelong.user_message
-            )
-            history.append({"role": "user", "content": user_message})
-
-            ai_response = generate_ai_response(user_message, history)
-            await AIChatService().create_new_message(
-                current_user, ai_response, chat_id, MessageBelong.assistant_message
-            )
-            history.append({"role": "assistant", "content": ai_response})
-            await manager.send_personal_message(ai_response, websocket)
-
-    except WebSocketDisconnect:
-        manager.disconnect(websocket)
-        print(f"Client disconnected")
+    await AIChatService().run_websocket_worker(websocket, chat_id, token)
