@@ -1,10 +1,9 @@
 import g4f
+
 from typing import List, Dict
-
-g4f.debug.logging = False
-
 from config_data.config import Config, load_config
 
+g4f.debug.logging = False
 settings: Config = load_config()
 
 

@@ -68,6 +68,14 @@ class AIChatService:
                     )
                     continue
 
+                if len(user_message) > current_user.message_length_limit:
+                    await manager.send_personal_message(
+                        f"Длина данного сообщения превышает лимит символов "
+                        f"({current_user.message_length_limit}) по Вашему тарифу",
+                        websocket
+                    )
+                    continue
+
                 current_user = await UserRepository().update_available_messages_count(current_user, -1)
 
                 await AIChatService().create_new_message(
