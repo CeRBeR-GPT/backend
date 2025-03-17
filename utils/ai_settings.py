@@ -3,6 +3,10 @@ from typing import List, Dict
 
 g4f.debug.logging = False
 
+from config_data.config import Config, load_config
+
+settings: Config = load_config()
+
 
 def generate_ai_response(user_message: str, history: List[Dict]) -> str:
     try:
@@ -13,12 +17,23 @@ def generate_ai_response(user_message: str, history: List[Dict]) -> str:
             messages=history,
         )
 
+        attempts = 0
+        while settings.variablesData.VPS_IP in response and attempts <= 3:
+            response = g4f.ChatCompletion.create(
+                model=g4f.models.default,
+                messages=history,
+            )
+            attempts += 1
+
+        if settings.variablesData.VPS_IP in response:
+            raise RuntimeError("Ошибка генерации ответа!")
+
         history.append({"role": "assistant", "content": response})
 
         return response
 
-    except Exception as e:
-        return f"Произошла ошибка при генерации ответа. Пожалуйста, попробуйте позже.  Детали: {e}"
+    except Exception:
+        raise RuntimeError("Ошибка генерации ответа!")
 
 
 if __name__ == "__main__":

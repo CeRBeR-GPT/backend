@@ -38,6 +38,7 @@ class EmailSender:
 @dataclass
 class VariablesData:
     BACKEND_HOST: str
+    VPS_IP: str
     FRONTEND_REDIRECT_URL: str
     FRONTEND_HOST: str
     MODE: str
@@ -110,6 +111,7 @@ def load_config(path: str | None = None) -> Config:
         ),
         variablesData=VariablesData(
             BACKEND_HOST=env("BACKEND_HOST"),
+            VPS_IP=env("VPS_IP"),
             FRONTEND_REDIRECT_URL=env("FRONTEND_REDIRECT_URL"),
             FRONTEND_HOST=env("FRONTEND_HOST"),
             MODE=env("MODE"),

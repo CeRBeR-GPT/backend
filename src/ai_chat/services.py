@@ -73,15 +73,20 @@ class AIChatService:
                 await AIChatService().create_new_message(
                     current_user, user_message, chat_id, MessageBelong.user_message
                 )
-                history.append({"role": "user", "content": user_message})
 
-                ai_response = await asyncio.to_thread(generate_ai_response, user_message, history)
+                try:
+                    ai_response = await asyncio.to_thread(generate_ai_response, user_message, history)
+                except RuntimeError:
+                    await UserRepository().update_available_messages_count(current_user, 1)
+                    await manager.send_personal_message(
+                        "Модель перегружена! Попробуйте повторить запрос (с Вашего счёта он не был списан)",
+                        websocket
+                    )
+                    continue
 
                 await AIChatService().create_new_message(
                     current_user, ai_response, chat_id, MessageBelong.assistant_message
                 )
-                history.append({"role": "assistant", "content": ai_response})
-
                 await manager.send_personal_message(ai_response, websocket)
 
         except WebSocketDisconnect:
