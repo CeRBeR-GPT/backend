@@ -9,7 +9,8 @@ from starlette.websockets import WebSocketState
 from src.ai_chat.exceptions import ChatNotFoundException, MessageNotFoundException
 from src.ai_chat.models import Chat, Message, MessageBelong
 from src.ai_chat.repositories import AIChatRepository
-from src.users.models import User
+from src.transactions.schemas import AvailableProviders
+from src.users.models import User, plan_settings
 from src.users.repositories import UserRepository
 from src.users.services import UserService
 
@@ -51,7 +52,10 @@ manager = ConnectionManager()
 class AIChatService:
     repository = AIChatRepository()
 
-    async def run_websocket_worker(self, websocket: WebSocket, chat_id: uuid.UUID, token: str):
+    async def run_websocket_worker(
+            self, websocket: WebSocket, chat_id: uuid.UUID, token: str,
+            provider: AvailableProviders = AvailableProviders.DEFAULT
+    ):
         current_user = await UserService().validate_user(token=token)
         history = await self.get_chat_history(current_user, chat_id)
         await manager.connect(websocket)
@@ -68,6 +72,9 @@ class AIChatService:
                     )
                     continue
 
+                if provider.name not in plan_settings["available_providers"]:
+                    raise
+
                 if len(user_message) > current_user.message_length_limit:
                     await manager.send_personal_message(
                         f"Длина данного сообщения превышает лимит символов "
@@ -83,7 +90,7 @@ class AIChatService:
                 )
 
                 try:
-                    ai_response = await asyncio.to_thread(generate_ai_response, user_message, history)
+                    ai_response = await asyncio.to_thread(generate_ai_response, user_message, history, provider.name)
                 except RuntimeError:
                     await UserRepository().update_available_messages_count(current_user, 1)
                     await manager.send_personal_message(

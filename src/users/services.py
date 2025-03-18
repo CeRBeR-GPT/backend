@@ -12,7 +12,7 @@ from typing import Optional
 
 from src.users.models import User, OAuthProvider, Plans
 from src.users.repositories import UserRepository
-from src.users.schemas import UserCreate, TokenData
+from src.users.schemas import UserCreate, TokenData, UserLogin
 from src.users.exceptions import CredentialException, TokenTypeException, UserNotFoundException, AccessException, \
     EmailExistsException, IncorrectEmailAddressException, IncorrectVerifyCodeException, EmailSenderException, \
     OAuthServiceNotFoundException, InvalidOAuthStateException
@@ -171,11 +171,11 @@ class UserService:
             expire_timedelta=timedelta(days=auth_config.refresh_token_expire_days)
         )
 
-    async def authenticate_user(self, email: str, password: str) -> Optional[User]:
-        user = await self.repository.get_user_by_email(email)
+    async def authenticate_user(self, user_data: UserLogin) -> Optional[User]:
+        user = await self.repository.get_user_by_email(user_data.email)
         if not user:
             raise CredentialException()
-        if not validate_password(password, user.password_hash):
+        if not validate_password(user_data.password, user.password_hash):
             raise CredentialException()
 
         return user

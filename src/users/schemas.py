@@ -34,6 +34,11 @@ class UserCreate(BaseModel):
     password: Annotated[str, Field(min_length=6, max_length=25)]
 
 
+class UserLogin(BaseModel):
+    email: Annotated[str, Field(min_length=6, max_length=50)]
+    password: Annotated[str, Field(min_length=6, max_length=25)]
+
+
 class UserResponse(BaseModel):
     id: uuid.UUID
     email: Annotated[str, Field(min_length=6, max_length=50)]

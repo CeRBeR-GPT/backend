@@ -1,10 +1,19 @@
 import uuid
 
 from datetime import datetime
-from typing import Literal
+from enum import Enum
+from typing import Literal, List
 from pydantic import BaseModel
 
 from src.users.models import Plans
+
+
+class AvailableProviders(str, Enum):
+    DEFAULT = "default"
+    DEEPSEEK = "deepseek"
+    GPT_4O_MINI = "gpt_4o_mini"
+    GPT_4O = "gpt_4o"
+    GPT_4 = "gpt_4"
 
 
 class PlanResponse(BaseModel):
@@ -13,6 +22,7 @@ class PlanResponse(BaseModel):
     count_limit: int
     price: int
     priority: Literal[1, 2, 3]
+    available_providers: List[AvailableProviders]
 
 
 class TransactionURLResponse(BaseModel):

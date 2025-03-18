@@ -1,6 +1,14 @@
 from fastapi import HTTPException, status
 
 
+class NotAvailableProviderException(HTTPException):
+    status_code = status.HTTP_403_FORBIDDEN
+    detail = "This provider not available"
+
+    def __init__(self):
+        super().__init__(status_code=self.status_code, detail=self.detail)
+
+
 class ChatNotFoundException(HTTPException):
     status_code = status.HTTP_404_NOT_FOUND
     detail = "Chat not found"

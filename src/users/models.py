@@ -1,11 +1,11 @@
 import datetime
 
 from enum import Enum
-from typing import Dict, Any, List
+from typing import Dict, Any
 import uuid
 
 from sqlalchemy import UUID, func, String
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column
 
 from config_data.config import load_config, Config
 from src.database import Base
@@ -61,6 +61,10 @@ plan_settings = {
         "price": 0,
         "description": "Default AI-Chat plan",
         "priority": 1,
+        "available_providers": [
+            "default",
+            "deepseek"
+        ]
     },
     "premium": {
         "max_length": 10000,
@@ -68,13 +72,25 @@ plan_settings = {
         "price": 999,
         "description": "Buy premium AI-Chat plan",
         "priority": 2,
+        "available_providers": [
+            "default",
+            "deepseek",
+            "gpt_4o_mini"
+        ]
     },
     "business": {
         "max_length": 20000,
         "count_limit": 100,
         "price": 2999,
         "description": "Buy business AI-Chat plan",
-        "priority": 3
+        "priority": 3,
+        "available_providers": [
+            "default",
+            "deepseek",
+            "gpt_4o_mini",
+            "gpt_4o",
+            "gpt_4"
+        ]
     }
 }
 
