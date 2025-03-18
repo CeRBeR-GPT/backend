@@ -76,7 +76,7 @@ async def websocket_worker(
         websocket: WebSocket,
         chat_id: uuid.UUID,
         token: str,
-        provider: AvailableProviders = AvailableProviders.DEFAULT
+        # provider: AvailableProviders
 
 ):
-    await AIChatService().run_websocket_worker(websocket, chat_id, token)
+    await AIChatService().run_websocket_worker(websocket, chat_id, token, AvailableProviders.DEFAULT)
