@@ -40,7 +40,8 @@ class ConnectionManager:
             if websocket.client_state == WebSocketState.CONNECTED:
                 await websocket.send_text(message)
             else:
-                print(f"! Attempted to send message to disconnected client: {websocket.client}")
+                print(
+                    f"! Attempted to send message to disconnected client: {websocket.client}")
 
         except WebSocketDisconnect:
             print(f"Client disconnected during send: {websocket.client}")
@@ -63,7 +64,8 @@ class AIChatService:
         try:
             while True:
                 user_message = await websocket.receive_text()
-                print(f"Received message from {websocket.client}: {user_message}")
+                print(
+                    f"Received message from {websocket.client}: {user_message}")
 
                 if current_user.available_message_count <= 0:
                     await manager.send_personal_message(
@@ -109,8 +111,6 @@ class AIChatService:
             await manager.disconnect(websocket)
         except Exception as e:
             print(f"!!! Error in websocket handler: {e}")
-
-            await UserRepository().update_available_messages_count(current_user, 1)
             await manager.send_personal_message(
                 "На сервере произошла ошибка! Попробуйте повторить запрос (с Вашего счёта он не был списан)",
                 websocket
@@ -124,9 +124,11 @@ class AIChatService:
 
         for message in dict_chat["messages"]:
             if message["message_belong"] == "user":
-                history_response.append({"role": "user", "content": message["text"]})
+                history_response.append(
+                    {"role": "user", "content": message["text"]})
             else:
-                history_response.append({"role": "assistant", "content": message["text"]})
+                history_response.append(
+                    {"role": "assistant", "content": message["text"]})
 
         return history_response
 
