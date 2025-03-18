@@ -3,6 +3,7 @@ import uuid
 from fastapi import APIRouter, Depends, WebSocket
 from typing import Annotated, List
 
+from src.transactions.schemas import AvailableProviders
 from src.ai_chat.schemas import AIChatResponse
 from src.ai_chat.services import AIChatService
 
@@ -74,6 +75,8 @@ async def delete_chat(
 async def websocket_worker(
         websocket: WebSocket,
         chat_id: uuid.UUID,
-        token: str
+        token: str,
+        provider: AvailableProviders = AvailableProviders.DEFAULT
+
 ):
     await AIChatService().run_websocket_worker(websocket, chat_id, token)
