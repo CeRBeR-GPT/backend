@@ -74,7 +74,7 @@ class AIChatService:
                     )
                     continue
 
-                if provider.name not in plan_settings["available_providers"]:
+                if provider.value not in plan_settings["available_providers"]:
                     raise
 
                 if len(user_message) > current_user.message_length_limit:
@@ -92,7 +92,7 @@ class AIChatService:
                 )
 
                 try:
-                    ai_response = await asyncio.to_thread(generate_ai_response, user_message, history, provider.name)
+                    ai_response = await asyncio.to_thread(generate_ai_response, user_message, history, provider.value)
                 except RuntimeError:
                     await UserRepository().update_available_messages_count(current_user, 1)
                     await manager.send_personal_message(
