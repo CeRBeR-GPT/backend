@@ -6,7 +6,7 @@ from typing import List, Dict
 
 from starlette.websockets import WebSocketState
 
-from src.ai_chat.exceptions import ChatNotFoundException, MessageNotFoundException
+from src.ai_chat.exceptions import ChatNotFoundException, MessageNotFoundException, NotAvailableProviderException
 from src.ai_chat.models import Chat, Message, MessageBelong
 from src.ai_chat.repositories import AIChatRepository
 from src.transactions.schemas import AvailableProviders
@@ -74,8 +74,8 @@ class AIChatService:
                     )
                     continue
 
-                if provider.value not in plan_settings["available_providers"]:
-                    raise
+                if provider.value not in plan_settings[current_user.plan.value]["available_providers"]:
+                    raise NotAvailableProviderException()
 
                 if len(user_message) > current_user.message_length_limit:
                     await manager.send_personal_message(
@@ -109,6 +109,12 @@ class AIChatService:
         except WebSocketDisconnect:
             print(f"Websocket client disconnected: {websocket.client}")
             await manager.disconnect(websocket)
+
+        except NotAvailableProviderException:
+            print("Provider type error!")
+            await manager.disconnect(websocket)
+            raise NotAvailableProviderException()
+
         except Exception as e:
             print(f"!!! Error in websocket handler: {e}")
             await manager.send_personal_message(
