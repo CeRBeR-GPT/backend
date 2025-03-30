@@ -55,7 +55,7 @@ class AIChatService:
 
     async def run_websocket_worker(
             self, websocket: WebSocket, chat_id: uuid.UUID, token: str,
-            provider: AvailableProviders = AvailableProviders.DEFAULT
+            provider: AvailableProviders
     ):
         current_user = await UserService().validate_user(token=token)
         history = await self.get_chat_history(current_user, chat_id)
