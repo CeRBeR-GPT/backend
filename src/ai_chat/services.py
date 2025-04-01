@@ -6,7 +6,8 @@ from typing import List, Dict
 
 from starlette.websockets import WebSocketState
 
-from src.ai_chat.exceptions import ChatNotFoundException, MessageNotFoundException, NotAvailableProviderException
+from src.ai_chat.exceptions import ChatNotFoundException, MessageNotFoundException, NotAvailableProviderException, \
+    ChatsLimitException
 from src.ai_chat.models import Chat, Message, MessageBelong
 from src.ai_chat.repositories import AIChatRepository
 from src.transactions.schemas import AvailableProviders
@@ -154,6 +155,10 @@ class AIChatService:
         return await self.repository.get_all_user_chats(user.id)
 
     async def create_new_chat(self, user: User, name: str) -> Chat:
+        chats = await self.get_all_user_chats(user.id)
+        if len(chats) >= plan_settings[user.plan.value]["chats_limit"]:
+            raise ChatsLimitException()
+
         return await self.repository.create_new_chat(name, user.id)
 
     async def edit_chat_name(self, user: User, chat_id: uuid.UUID, new_name: str) -> Chat:

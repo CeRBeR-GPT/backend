@@ -58,6 +58,7 @@ plan_settings = {
     "default": {
         "max_length": 2000,
         "count_limit": 10,
+        "chats_limit": 20,
         "price": 0,
         "description": "Default AI-Chat plan",
         "priority": 1,
@@ -70,6 +71,7 @@ plan_settings = {
         "max_length": 10000,
         "count_limit": 50,
         "price": 999,
+        "chats_limit": 20,
         "description": "Buy premium AI-Chat plan",
         "priority": 2,
         "available_providers": [
@@ -81,6 +83,7 @@ plan_settings = {
     "business": {
         "max_length": 20000,
         "count_limit": 100,
+        "chats_limit": 50,
         "price": 2999,
         "description": "Buy business AI-Chat plan",
         "priority": 3,

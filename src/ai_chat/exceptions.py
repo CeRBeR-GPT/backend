@@ -23,3 +23,11 @@ class MessageNotFoundException(HTTPException):
 
     def __init__(self):
         super().__init__(status_code=self.status_code, detail=self.detail)
+
+
+class ChatsLimitException(HTTPException):
+    status_code = status.HTTP_400_BAD_REQUEST
+    detail = "You have exceeded the chat limit according to your plan"
+
+    def __init__(self):
+        super().__init__(status_code=self.status_code, detail=self.detail)

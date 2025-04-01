@@ -1,8 +1,8 @@
 import datetime
 import uuid
 
-from typing import Optional, List
-from sqlalchemy import insert, select, delete, update, column, func
+from typing import Optional, List, Dict
+from sqlalchemy import insert, select, delete, update, column, func, and_
 
 from config_data.config import Config, load_config
 from utils import jwt_settings
@@ -10,6 +10,7 @@ from src.database import async_session
 
 from src.users.models import User, VerifyCode, Plans, plan_settings
 from src.users.schemas import UserCreate
+from src.ai_chat.models import Message
 
 settings: Config = load_config(".env")
 
@@ -93,14 +94,37 @@ class UserRepository:
             await session.execute(stmt)
             await session.commit()
 
-    async def reset_users_plan_to_default(self):
+    async def reset_users_plan_to_default(self) -> None:
         current_date = datetime.date.today()
         timedelta = datetime.timedelta(days=28)
-        users: List[User] = await self.get_all_users()
 
-        for user in users:
-            if user.plan_purchase_date + timedelta < current_date:
-                await self.update_user_plan(user.id, Plans.default)
+        default_plan_about = plan_settings[Plans.default.value]
+        new_message_length_limit = default_plan_about["max_length"]
+        new_message_count_limit = default_plan_about["count_limit"]
+
+        async with async_session() as session:
+            stmt = update(User).where(User.plan_purchase_date + timedelta < current_date).values(
+                plan=Plans.default,
+                plan_purchase_date=datetime.date.today(),
+                available_message_count=new_message_count_limit,
+                message_length_limit=new_message_length_limit,
+                message_count_limit=new_message_count_limit
+            )
+            await session.execute(stmt)
+            await session.commit()
+
+    async def delete_old_user_messages(self) -> None:
+        current_date = datetime.date.today()
+        timedelta = datetime.timedelta(days=7)
+        users: Dict[uuid.UUID, User] = {user.id: user for user in await self.get_all_users()}
+
+        async with async_session() as session:
+            stmt = delete(Message).where(and_(
+                users[Message.user_id].plan == Plans.default,
+                Message.created_at + timedelta < current_date
+            ))
+            await session.execute(stmt)
+            await session.commit()
 
     async def update_user_plan(self, user_id: uuid.UUID, plan: Plans) -> User:
         new_plan_about = plan_settings[plan.value]
