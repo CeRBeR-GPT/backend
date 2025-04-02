@@ -8,7 +8,7 @@ settings: Config = load_config()
 
 ai_models = {
     "default": g4f.models.default,
-    "deepseek": g4f.models.deepseek_chat,
+    "deepseek": g4f.models.deepseek_r1,
     "gpt_4o_mini": g4f.models.gpt_4o_mini,
     "gpt_4o": g4f.models.gpt_4o,
     "gpt_4": g4f.models.gpt_4
@@ -51,7 +51,7 @@ if __name__ == "__main__":
 
     while True:
         query = input("Введите ваше сообщение: ")
-        print(generate_ai_response(query, messages, "gpt_4"))
+        print(generate_ai_response(query, messages, "deepseek"))
         print()
         print(messages)
         print()

@@ -20,6 +20,7 @@ class PlanResponse(BaseModel):
     name: str
     max_length: int
     count_limit: int
+    chats_limit: int
     price: int
     priority: Literal[1, 2, 3]
     available_providers: List[AvailableProviders]
