@@ -58,7 +58,7 @@ plan_settings = {
     "default": {
         "max_length": 2000,
         "count_limit": 10,
-        "chats_limit": 20,
+        "chats_limit": 5,
         "price": 0,
         "description": "Default AI-Chat plan",
         "priority": 1,

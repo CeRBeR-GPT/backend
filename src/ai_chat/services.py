@@ -155,7 +155,7 @@ class AIChatService:
         return await self.repository.get_all_user_chats(user.id)
 
     async def create_new_chat(self, user: User, name: str) -> Chat:
-        chats = await self.get_all_user_chats(user.id)
+        chats = await self.get_all_user_chats(user)
         if len(chats) >= plan_settings[user.plan.value]["chats_limit"]:
             raise ChatsLimitException()
 

@@ -4,7 +4,6 @@ from celery import Celery
 from celery.schedules import crontab
 
 from src.users.repositories import UserRepository
-from utils.ai_settings import generate_ai_response
 from utils.email_sender import send_verification_code
 
 celery_app = Celery(
