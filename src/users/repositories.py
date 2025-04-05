@@ -1,7 +1,7 @@
 import datetime
 import uuid
 
-from typing import Optional, List, Dict
+from typing import Optional, List
 from sqlalchemy import insert, select, delete, update, column, func, and_
 
 from config_data.config import Config, load_config
@@ -113,14 +113,17 @@ class UserRepository:
             await session.execute(stmt)
             await session.commit()
 
-    async def delete_old_user_messages(self) -> None:
+    async def delete_old_default_users_messages(self) -> None:
         current_date = datetime.date.today()
         timedelta = datetime.timedelta(days=7)
-        users: Dict[uuid.UUID, User] = {user.id: user for user in await self.get_all_users()}
+
+        default_users_ids = set()
+        for user in await self.get_all_default_users():
+            default_users_ids.add(user.id)
 
         async with async_session() as session:
             stmt = delete(Message).where(and_(
-                users[Message.user_id].plan == Plans.default,
+                Message.user_id.in_(default_users_ids),
                 Message.created_at + timedelta < current_date
             ))
             await session.execute(stmt)
@@ -159,6 +162,14 @@ class UserRepository:
             user = result.scalars().first()
 
         return user
+
+    async def get_all_default_users(self) -> List[User]:
+        async with async_session() as session:
+            query = select(User).where(User.plan == Plans.default)
+            result = await session.execute(query)
+            users = result.scalars().all()
+
+            return users
 
     async def get_all_users(self) -> List[User]:
         async with async_session() as session:
