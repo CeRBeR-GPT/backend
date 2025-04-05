@@ -1,10 +1,10 @@
 import datetime
 import uuid
-from enum import Enum
 
 from sqlalchemy import UUID, func, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import Dict, Any, List
+from enum import Enum
 
 from src.database import Base
 

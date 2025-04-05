@@ -27,6 +27,7 @@ async def daily_users_update():
     repo = UserRepository()
     await repo.reset_available_messages()
     await repo.reset_users_plan_to_default()
+    await repo.delete_old_user_messages()
 
     return "successful update!"
 

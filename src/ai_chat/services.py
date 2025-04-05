@@ -3,7 +3,6 @@ import uuid
 
 from fastapi import WebSocket, WebSocketDisconnect
 from typing import List, Dict
-
 from starlette.websockets import WebSocketState
 
 from src.ai_chat.exceptions import ChatNotFoundException, MessageNotFoundException, NotAvailableProviderException, \

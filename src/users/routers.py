@@ -93,9 +93,9 @@ async def login_for_access_token(
     return UserResponse(**current_user.to_dict())
 
 
-@router.delete("/", response_model=SuccessfulResponse)
-async def delete_user(
-        current_user: Annotated[User, Depends(UserService().get_current_user)]
-) -> SuccessfulResponse:
-    await UserService().delete_user(current_user)
-    return SuccessfulResponse()
+# @router.delete("/", response_model=SuccessfulResponse)
+# async def delete_user(
+#         current_user: Annotated[User, Depends(UserService().get_current_user)]
+# ) -> SuccessfulResponse:
+#     await UserService().delete_user(current_user)
+#     return SuccessfulResponse()
