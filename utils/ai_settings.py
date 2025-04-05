@@ -28,7 +28,7 @@ def generate_ai_response(user_message: str, history: List[Dict], provider_name: 
         )
 
         attempts = 0
-        while settings.variablesData.VPS_IP in response and attempts <= 3:
+        while settings.variablesData.VPS_IP in response and attempts < 5:
             response = g4f.ChatCompletion.create(
                 model=provider,
                 messages=history,

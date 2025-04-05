@@ -1,6 +1,6 @@
 import uuid
-from typing import List
 
+from typing import List
 from sqlalchemy import insert, select, update, delete, and_
 
 from src.ai_chat.models import Chat, Message, MessageBelong
