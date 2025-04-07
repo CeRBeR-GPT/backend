@@ -3,7 +3,7 @@ from typing import Annotated
 
 from src.users.models import User, OAuthProvider
 from src.users.schemas import UserCreate, Token, UserResponse, SuccessfulResponse, SuccessfulGetVerifyCodeResponse, \
-    SuccessfulValidation
+    SuccessfulValidation, FeedbackResponse, FeedbackCreate
 from src.users.services import UserService
 
 router = APIRouter(tags=["user"], prefix="/user")
@@ -52,6 +52,15 @@ async def check_code_from_email(email: str, code: int) -> SuccessfulValidation:
         return SuccessfulValidation()
 
 
+@router.post("/feedback", response_model=FeedbackResponse)
+async def send_feedback(
+        current_user: Annotated[User, Depends(UserService().get_current_user)],
+        new_feedback: FeedbackCreate
+) -> FeedbackResponse:
+    feedback = await UserService().send_feedback(new_feedback, current_user)
+    return FeedbackResponse(**feedback.to_dict())
+
+
 @router.post("/register")
 async def register(user_create: UserCreate) -> Token:
     user = await UserService().create_user(user_create)
@@ -91,7 +100,6 @@ async def login_for_access_token(
         current_user: Annotated[User, Depends(UserService().get_current_user)]
 ) -> UserResponse:
     return UserResponse(**current_user.to_dict())
-
 
 # @router.delete("/", response_model=SuccessfulResponse)
 # async def delete_user(

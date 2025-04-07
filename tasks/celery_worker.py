@@ -4,7 +4,7 @@ from celery import Celery
 from celery.schedules import crontab
 
 from src.users.repositories import UserRepository
-from utils.email_sender import send_verification_code
+from utils.email_sender import send_verification_code, send_feedback
 
 celery_app = Celery(
     'tasks',
@@ -16,6 +16,11 @@ celery_app = Celery(
 @celery_app.task
 def task_send_to_email(email, code):
     send_verification_code(email, code)
+
+
+@celery_app.task
+def task_send_feedback(name: str, message: str, email: str):
+    return send_feedback(name, message, email)
 
 
 @celery_app.task

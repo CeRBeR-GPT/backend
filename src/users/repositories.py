@@ -8,8 +8,8 @@ from config_data.config import Config, load_config
 from utils import jwt_settings
 from src.database import async_session
 
-from src.users.models import User, VerifyCode, Plans, plan_settings
-from src.users.schemas import UserCreate
+from src.users.models import User, VerifyCode, Plans, plan_settings, Feedback
+from src.users.schemas import UserCreate, FeedbackCreate
 from src.ai_chat.models import Message
 
 settings: Config = load_config(".env")
@@ -22,6 +22,25 @@ class UserRepository:
             stmt = insert(VerifyCode).values(email=email, code=code)
             await session.execute(stmt)
             await session.commit()
+
+    async def get_feedback_by_id(self, feedback_id: uuid.UUID):
+        async with async_session() as session:
+            query = select(Feedback).where(Feedback.id == feedback_id)
+            result = await session.execute(query)
+            feedback = result.scalars().first()
+
+            return feedback
+
+    async def create_feedback(self, feedback: FeedbackCreate, email: str) -> Feedback:
+        feedback_id = uuid.uuid4()
+        async with async_session() as session:
+            stmt = insert(Feedback).values(
+                id=feedback_id, name=feedback.name, message=feedback.message, user_email=email
+            )
+            await session.execute(stmt)
+            await session.commit()
+
+        return await self.get_feedback_by_id(feedback_id)
 
     async def update_verify_code(self, email: str, code: int) -> None:
         async with async_session() as session:
