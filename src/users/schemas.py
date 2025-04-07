@@ -49,5 +49,13 @@ class UserResponse(BaseModel):
     message_count_limit: int
 
 
+class FeedbackCreate(BaseModel):
+    name: str
+    message: str
+
+
 class FeedbackResponse(BaseModel):
-    pass
+    id: uuid.UUID
+    name: str
+    user_email: str
+    message: str

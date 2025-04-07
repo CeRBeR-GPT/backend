@@ -139,10 +139,18 @@ class VerifyCode(Base):
     code: Mapped[int] = mapped_column()
 
 
-class FeedbackModel(Base):
+class Feedback(Base):
     __tablename__ = "feedbacks"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String(50), nullable=False)
-    user_email: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    user_email: Mapped[str] = mapped_column(ForeignKey("users.email", ondelete="CASCADE"))
     message: Mapped[str] = mapped_column(String(10000), nullable=False)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": str(self.id),
+            "name": self.name,
+            "user_email": self.user_email,
+            "message": self.message
+        }

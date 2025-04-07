@@ -10,17 +10,17 @@ from datetime import timedelta
 from urllib.parse import urlencode
 from typing import Optional
 
-from src.users.models import User, OAuthProvider, Plans
+from src.users.models import User, OAuthProvider, Plans, Feedback
 from src.users.repositories import UserRepository
-from src.users.schemas import UserCreate, TokenData, UserLogin
+from src.users.schemas import UserCreate, TokenData, UserLogin, FeedbackCreate, FeedbackResponse
 from src.users.exceptions import CredentialException, TokenTypeException, UserNotFoundException, AccessException, \
     EmailExistsException, IncorrectEmailAddressException, IncorrectVerifyCodeException, EmailSenderException, \
     OAuthServiceNotFoundException, InvalidOAuthStateException
 
-from tasks.celery_worker import task_send_to_email
+from tasks.celery_worker import task_send_to_email, task_send_feedback
 from config_data.config import Config, load_config
 
-from utils.email_sender import generate_confirmation_mode
+from utils.email_sender import generate_confirmation_mode, send_feedback
 from utils.jwt_settings import validate_password, decode_jwt, encode_jwt
 from utils.oauth2_settings import get_google_oauth_email, get_yandex_oauth_email, get_github_oauth_email
 
@@ -103,8 +103,9 @@ class UserService:
 
         return response
 
-    async def send_feedback(self, message: str, name: str) -> None:
-        pass
+    async def send_feedback(self, new_feedback: FeedbackCreate, user: User) -> Feedback:
+        task_send_feedback(new_feedback.name, new_feedback.message, user.email)
+        return await self.repository.create_feedback(new_feedback, user.email)
 
     async def get_verify_code(self, email: str) -> None:
         potential_user = await self.repository.get_user_by_email(email)
