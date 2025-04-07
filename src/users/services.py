@@ -103,6 +103,9 @@ class UserService:
 
         return response
 
+    async def send_feedback(self, message: str, name: str) -> None:
+        pass
+
     async def get_verify_code(self, email: str) -> None:
         potential_user = await self.repository.get_user_by_email(email)
         if potential_user is not None:

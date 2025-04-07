@@ -47,3 +47,7 @@ class UserResponse(BaseModel):
     available_message_count: int
     message_length_limit: int
     message_count_limit: int
+
+
+class FeedbackResponse(BaseModel):
+    pass

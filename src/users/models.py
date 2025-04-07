@@ -1,10 +1,10 @@
+import uuid
 import datetime
 
 from enum import Enum
 from typing import Dict, Any
-import uuid
 
-from sqlalchemy import UUID, func, String
+from sqlalchemy import UUID, func, String, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 
 from config_data.config import load_config, Config
@@ -137,3 +137,12 @@ class VerifyCode(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     email: Mapped[str] = mapped_column(String(50), unique=True)
     code: Mapped[int] = mapped_column()
+
+
+class FeedbackModel(Base):
+    __tablename__ = "feedbacks"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name: Mapped[str] = mapped_column(String(50), nullable=False)
+    user_email: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    message: Mapped[str] = mapped_column(String(10000), nullable=False)
