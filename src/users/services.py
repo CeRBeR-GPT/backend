@@ -104,7 +104,7 @@ class UserService:
         return response
 
     async def send_feedback(self, new_feedback: FeedbackCreate, user: User) -> Feedback:
-        task_send_to_email.delay(new_feedback.name, new_feedback.message, user.email)
+        task_send_feedback.delay(new_feedback.name, new_feedback.message, user.email)
         return await self.repository.create_feedback(new_feedback, user.email)
 
     async def get_verify_code(self, email: str) -> None:
