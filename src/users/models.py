@@ -53,9 +53,9 @@ class OAuthProvider(Enum):
         "scope": "user:email",
         "CLIENT_ID": vk_config.CLIENT_ID,
         "CLIENT_SECRET": vk_config.CLIENT_SECRET,
-        "TOKEN_URL": "https://oauth.vk.com/access_token",
-        "AUTH_URL": "https://oauth.vk.com/authorize",
-        "USER_URL": "https://api.vk.com/method/users.get"
+        "TOKEN_URL": "https://api.vk.com/oauth/token",
+        "AUTH_URL": "https://id.vk.com/auth",
+        "USER_URL": "https://api.vk.ru/method/users.get"
     }
 
 

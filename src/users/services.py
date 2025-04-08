@@ -23,7 +23,8 @@ from config_data.config import Config, load_config
 
 from utils.email_sender import generate_confirmation_mode, send_feedback
 from utils.jwt_settings import validate_password, decode_jwt, encode_jwt
-from utils.oauth2_settings import get_google_oauth_email, get_yandex_oauth_email, get_github_oauth_email
+from utils.oauth2_settings import get_google_oauth_email, get_yandex_oauth_email, get_github_oauth_email, \
+    get_vk_oauth_email
 
 http_bearer = HTTPBearer()
 
@@ -97,6 +98,8 @@ class UserService:
                 email = await get_yandex_oauth_email(data)
             case "github":
                 email = await get_github_oauth_email(data)
+            case "vk":
+                email = await get_vk_oauth_email(data)
             case _:
                 logger.error("Error: Unknown service???")
                 raise OAuthServiceNotFoundException()
