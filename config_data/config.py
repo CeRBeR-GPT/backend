@@ -71,6 +71,12 @@ class GitHubData:
 
 
 @dataclass
+class VkontakteData:
+    CLIENT_ID: str
+    CLIENT_SECRET: str
+
+
+@dataclass
 class YookassaData:
     CLIENT_ID: str
     CLIENT_SECRET: str
@@ -86,6 +92,7 @@ class Config:
     googleData: GoogleData
     yandexData: YandexData
     githubData: GitHubData
+    vkData: VkontakteData
     yookassaData: YookassaData
 
 
@@ -136,6 +143,10 @@ def load_config(path: str | None = None) -> Config:
         githubData=GitHubData(
             CLIENT_ID=env("GITHUB_CLIENT_ID"),
             CLIENT_SECRET=env("GITHUB_CLIENT_SECRET")
+        ),
+        vkData=VkontakteData(
+            CLIENT_ID=env("VK_CLIENT_ID"),
+            CLIENT_SECRET=env("VK_CLIENT_SECRET")
         ),
         yookassaData=YookassaData(
             CLIENT_ID=env("YOOKASSA_CLIENT_ID"),

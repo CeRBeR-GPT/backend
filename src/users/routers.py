@@ -25,6 +25,11 @@ async def github_auth(request: Request):
     return await UserService().get_oauth2_redirect(request, OAuthProvider.GITHUB)
 
 
+@auth_router.get("/vk")
+async def vk_auth(request: Request):
+    return await UserService().get_oauth2_redirect(request, OAuthProvider.VK)
+
+
 @auth_router.get("/google/callback", name="google_callback")
 async def google_auth_callback(request: Request, code: str, state: str):
     return await UserService().get_response_from_oauth2_callback(request, code, state, OAuthProvider.GOOGLE)
@@ -38,6 +43,11 @@ async def yandex_auth_callback(request: Request, code: str, state: str):
 @auth_router.get("/github/callback", name="github_callback")
 async def github_auth_callback(request: Request, code: str, state: str):
     return await UserService().get_response_from_oauth2_callback(request, code, state, OAuthProvider.GITHUB)
+
+
+@auth_router.get("/vk/callback", name="vk_callback")
+async def vk_auth_callback(request: Request, code: str, state: str):
+    return await UserService().get_response_from_oauth2_callback(request, code, state, OAuthProvider.VK)
 
 
 @router.get("/register/verify_code", response_model=SuccessfulGetVerifyCodeResponse)

@@ -14,6 +14,7 @@ settings: Config = load_config(".env")
 google_config = settings.googleData
 yandex_config = settings.yandexData
 github_config = settings.githubData
+vk_config = settings.vkData
 
 
 class OAuthProvider(Enum):
@@ -45,6 +46,16 @@ class OAuthProvider(Enum):
         "TOKEN_URL": "https://github.com/login/oauth/access_token",
         "AUTH_URL": "https://github.com/login/oauth/authorize",
         "USER_URL": "https://api.github.com/user"
+    }
+
+    VK = {
+        "name": "vk",
+        "scope": "user:email",
+        "CLIENT_ID": vk_config.CLIENT_ID,
+        "CLIENT_SECRET": vk_config.CLIENT_SECRET,
+        "TOKEN_URL": "https://oauth.vk.com/access_token",
+        "AUTH_URL": "https://oauth.vk.com/authorize",
+        "USER_URL": "https://api.vk.com/method/users.get"
     }
 
 

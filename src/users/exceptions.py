@@ -26,11 +26,14 @@ class OAuthTokenNotFoundException(HTTPException):
         super().__init__(status_code=self.status_code, detail=self.detail)
 
 
-class FetchingGitHubUserException(HTTPException):
-    status_code = status.HTTP_400_BAD_REQUEST
-    detail = "Failed to fetch user info from GitHub"
+class OAuthFetchingUserException(HTTPException):
+    def __new__(cls, *args, **kwargs):
+        cls.detail = f"Failed to fetch user info from {args[0]}"
+        cls.status_code = status.HTTP_400_BAD_REQUEST
 
-    def __init__(self):
+        return super().__new__(cls)
+
+    def __init__(self, *args):  # noqa
         super().__init__(status_code=self.status_code, detail=self.detail)
 
 
