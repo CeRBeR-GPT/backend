@@ -2,6 +2,7 @@ import secrets
 import smtplib
 import uuid
 import jwt
+import logging
 
 from fastapi import Depends, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -26,6 +27,9 @@ from utils.oauth2_settings import get_google_oauth_email, get_yandex_oauth_email
 
 http_bearer = HTTPBearer()
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 settings: Config = load_config(".env")
 auth_config = settings.authJWT
 
@@ -43,6 +47,10 @@ class UserService:
         request.session[f"{service_data['name']}_oauth_state"] = state
         redirect_uri = request.url_for(f"{service_data['name']}_callback")
 
+        logger.info(f"Generating OAuth2 redirect URL for {service_data['name']} service")
+        logger.info(f"State: {state}")
+        logger.info(f"Redirect URI: {redirect_uri}")
+
         params = {
             "client_id": service_data['CLIENT_ID'],
             "redirect_uri": redirect_uri,
@@ -54,12 +62,17 @@ class UserService:
         }
 
         auth_url = f"{service_data['AUTH_URL']}?{urlencode(params)}"
+        logger.info(f"Auth URL: {auth_url}")
+
         return RedirectResponse(auth_url)
 
     async def get_response_from_oauth2_callback(
             self, request: Request, code: str, state: str, service: OAuthProvider
     ) -> RedirectResponse:
+        logger.info(f"Received OAuth2 callback with code: {code} and state: {state}")
+
         if state != request.query_params.get("state"):
+            logger.error("Error: Invalid OAuth state!")
             raise InvalidOAuthStateException()
 
         service_data = service.value
@@ -80,7 +93,10 @@ class UserService:
             case "github":
                 email = await get_github_oauth_email(data)
             case _:
+                logger.error("Error: Unknown service???")
                 raise OAuthServiceNotFoundException()
+
+        logger.info(f"Successful get user email: {email}")
 
         user_data = {
             "email": email,
@@ -89,17 +105,23 @@ class UserService:
 
         try:
             user = await self.get_user_by_email(user_data["email"])
+            logger.info(f"Oauth2 user with email {user_data['email']} existed. Login...")
         except UserNotFoundException:
+            logger.info(f"Oauth2 user with email {user_data['email']} not found. Registration...")
             user = await self.create_user(UserCreate(**user_data))
 
         access_token = self.create_access_token(user)
         refresh_token = self.create_refresh_token(user)
+
+        logger.info(f"Creating access and refresh tokens for user {user.email}")
 
         response = RedirectResponse(url=settings.variablesData.FRONTEND_REDIRECT_URL)
         response.set_cookie(key="access_token", value=access_token, httponly=False, secure=True, samesite="none",
                             domain=".energy-cerber.ru")
         response.set_cookie(key="refresh_token", value=refresh_token, httponly=False, secure=True, samesite="none",
                             domain=".energy-cerber.ru")
+
+        logger.info(f"Successful setting cookies for access_token and refresh_token")
 
         return response
 
