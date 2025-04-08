@@ -53,15 +53,26 @@ class UserService:
         logger.info(f"State: {state}")
         logger.info(f"Redirect URI: {redirect_uri}")
 
-        params = {
-            "client_id": service_data['CLIENT_ID'],
-            "redirect_uri": redirect_uri,
-            "response_type": "code",
-            "scope": service_data['scope'],
-            "state": state,
-            "access_type": "offline",
-            "prompt": "select_account",
-        }
+        if service_data["name"] == "vk":
+            logger.info("Creating vk params...")
+            params = {
+                "app_id": service_data['CLIENT_ID'],
+                "redirect_uri": redirect_uri,
+                "response_type": "code",
+                "scope": service_data['scope'],
+                "state": state,
+                "v": "5.131"
+            }
+        else:
+            params = {
+                "client_id": service_data['CLIENT_ID'],
+                "redirect_uri": redirect_uri,
+                "response_type": "code",
+                "scope": service_data['scope'],
+                "state": state,
+                "access_type": "offline",
+                "prompt": "select_account",
+            }
 
         auth_url = f"{service_data['AUTH_URL']}?{urlencode(params)}"
         logger.info(f"Auth URL: {auth_url}")
