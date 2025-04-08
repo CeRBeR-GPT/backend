@@ -44,7 +44,7 @@ def send_verification_code(email: str, code: int) -> int:
     msg['To'] = email
     msg['Subject'] = "Регистрация в AI-Chat"
 
-    body = f"Ваш код подтверждения: **{code}**\n\nЭто сообщение отправлено автоматически."
+    body = f"Ваш код подтверждения: {code}\n\nЭто сообщение отправлено автоматически."
 
     msg.attach(MIMEText(body, 'plain'))
     smtp_server.sendmail(email_sender.EMAIL_NAME, email, msg.as_string())

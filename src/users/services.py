@@ -32,6 +32,7 @@ logger = logging.getLogger(__name__)
 
 settings: Config = load_config(".env")
 auth_config = settings.authJWT
+variables = settings.variablesData
 
 TOKEN_TYPE_FIELD = "type"
 ACCESS_TOKEN_TYPE = "access"
@@ -45,7 +46,7 @@ class UserService:
         service_data = service.value
         state = secrets.token_urlsafe(32)
         request.session[f"{service_data['name']}_oauth_state"] = state
-        redirect_uri = request.url_for(f"{service_data['name']}_callback")
+        redirect_uri = f"{variables.CLIENT_PROTOCOL}://{variables.BACKEND_DOMAIN}/auth/{service_data['name']}/callback"
 
         logger.info(f"Generating OAuth2 redirect URL for {service_data['name']} service")
         logger.info(f"State: {state}")
@@ -81,9 +82,13 @@ class UserService:
             "code": code,
             "client_id": service_data["CLIENT_ID"],
             "client_secret": service_data["CLIENT_SECRET"],
-            "redirect_uri": request.url_for(f"{service_data['name']}_callback"),
+            "redirect_uri": (
+                f"{variables.CLIENT_PROTOCOL}://{variables.BACKEND_DOMAIN}/auth/{service_data['name']}/callback"
+            ),
             "grant_type": "authorization_code",
         }
+
+        logger.info(f"data[redirect_uri] = {data['redirect_uri']}")
 
         match service_data["name"]:
             case "google":

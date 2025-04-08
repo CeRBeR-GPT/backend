@@ -43,6 +43,8 @@ class VariablesData:
     FRONTEND_REDIRECT_URL: str
     FRONTEND_HOST: str
     MODE: str
+    BACKEND_DOMAIN: str
+    CLIENT_PROTOCOL: str
 
 
 @dataclass
@@ -117,6 +119,8 @@ def load_config(path: str | None = None) -> Config:
             FRONTEND_REDIRECT_URL=env("FRONTEND_REDIRECT_URL"),
             FRONTEND_HOST=env("FRONTEND_HOST"),
             MODE=env("MODE"),
+            BACKEND_DOMAIN=env("BACKEND_DOMAIN"),
+            CLIENT_PROTOCOL=env("CLIENT_PROTOCOL")
         ),
         secrets=Secrets(
             SECRET_KEY=env("SECRET_KEY")
