@@ -19,6 +19,18 @@ class DataBase:
 
 
 @dataclass
+class RedisConf:
+    REDIS_HOST: str
+    REDIS_PORT: int
+    REDIS_DB: int
+    REDIS_PASSWORD: str
+
+    @property
+    def REDIS_URL(self):
+        return f"redis://:{self.REDIS_PASSWORD}@{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
+
+
+@dataclass
 class AuthJWT:
     private_key_path: Path = BASE_DIR / "certs" / "jwt-private.pem"
     public_key_path: Path = BASE_DIR / "certs" / "jwt-public.pem"
@@ -79,6 +91,7 @@ class YookassaData:
 @dataclass
 class Config:
     database: DataBase
+    redis: RedisConf
     authJWT: AuthJWT
     email_sender: EmailSender
     variablesData: VariablesData
@@ -100,6 +113,12 @@ def load_config(path: str | None = None) -> Config:
             DB_USER=env("DB_USER"),
             DB_PASS=env("DB_PASS"),
             DB_NAME=env("DB_NAME")
+        ),
+        redis=RedisConf(
+            REDIS_HOST=env("REDIS_HOST"),
+            REDIS_PORT=env("REDIS_PORT"),
+            REDIS_DB=env("REDIS_DB"),
+            REDIS_PASSWORD=env("REDIS_PASSWORD")
         ),
         authJWT=AuthJWT(
             private_key_path=AuthJWT.private_key_path,
