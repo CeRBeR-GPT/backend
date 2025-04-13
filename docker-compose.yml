@@ -1,18 +1,21 @@
 version: '3.9'
 
 services:
-  api:
+  backend:
     build: .
-    container_name: hack-api
+    container_name: gpt-backend
     env_file:
       - .env
     depends_on:
       - postgres
+      - redis
     ports:
       - "8000:8000"
+    networks:
+      - network
 
   postgres:
-    container_name: hack-db
+    container_name: gpt-db
     image: postgres:latest
     environment:
       POSTGRES_USER: ${DB_USER}
@@ -21,10 +24,90 @@ services:
     ports:
       - "5433:5432"
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}" ]
       interval: 30s
       timeout: 10s
       retries: 5
     restart: unless-stopped
     volumes:
       - ./pgdata:/var/lib/postgresql/data
+    networks:
+      - network
+
+  mongodb:
+    image: mongo:latest
+    container_name: gpt-mongo
+    ports:
+      - "27017:27017"
+    command: [--auth]
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASS}
+      MONGO_INITDB_DATABASE: ${MONGODB_NAME}
+    healthcheck:
+      test: [ "CMD-SHELL", "mongosh --eval 'db.runCommand(\"ping\").ok' --username ${MONGODB_USER} --password ${MONGODB_PASS}  --authenticationDatabase admin" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - network
+
+  redis:
+    container_name: gpt-redis
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    networks:
+      - network
+
+  celery_worker:
+    build:
+      context: ./backend/
+      dockerfile: ./Dockerfile
+    container_name: gpt-celery-worker
+    env_file:
+      - .env
+    command: celery -A tasks.celery_worker:celery_app worker --loglevel=INFO
+    depends_on:
+      - redis
+      - backend
+    networks:
+      - network
+
+  celery_beat:
+    build:
+      context: ./backend/
+      dockerfile: ./Dockerfile
+    container_name: gpt-celery-beat
+    env_file:
+      - .env
+    command: celery -A tasks.celery_worker:celery_app beat --loglevel=INFO
+    depends_on:
+      - redis
+      - backend
+    networks:
+      - network
+
+  flower:
+    build:
+      context: ./backend/
+      dockerfile: ./Dockerfile
+    container_name: gpt-flower
+    command: celery -A tasks.celery_worker:celery_app flower --port=5555
+    ports:
+      - "5555:5555"
+    depends_on:
+      - redis
+      - celery_worker
+    networks:
+      - network
+
+networks:
+  network:
+
+volumes:
+  mongodb_data:
+  pg_data:

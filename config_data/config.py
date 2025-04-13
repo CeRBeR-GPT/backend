@@ -19,6 +19,19 @@ class DataBase:
 
 
 @dataclass
+class MongoDB:
+    DB_HOST: str
+    DB_PORT: int
+    DB_USER: str
+    DB_PASS: str
+    DB_NAME: str
+
+    @property
+    def MONGO_URL(self):
+        return f"mongodb://{self.DB_USER}:{self.DB_PASS}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+
+
+@dataclass
 class RedisConf:
     REDIS_HOST: str
     REDIS_PORT: int
@@ -91,6 +104,7 @@ class YookassaData:
 @dataclass
 class Config:
     database: DataBase
+    mongoDB: MongoDB
     redis: RedisConf
     authJWT: AuthJWT
     email_sender: EmailSender
@@ -113,6 +127,13 @@ def load_config(path: str | None = None) -> Config:
             DB_USER=env("DB_USER"),
             DB_PASS=env("DB_PASS"),
             DB_NAME=env("DB_NAME")
+        ),
+        mongoDB=MongoDB(
+            DB_HOST=env("MONGODB_HOST"),
+            DB_PORT=env("MONGODB_PORT"),
+            DB_USER=env("MONGODB_USER"),
+            DB_PASS=env("MONGODB_PASS"),
+            DB_NAME=env("MONGODB_NAME")
         ),
         redis=RedisConf(
             REDIS_HOST=env("REDIS_HOST"),
