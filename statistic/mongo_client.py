@@ -18,8 +18,8 @@ logger = logging.getLogger(__name__)
 
 
 async def init_mongo():
-    logger.info("MONGO_URL:", f"mongodb://{mongo_settings.DB_HOST}:{mongo_settings.DB_PORT}/ai-chat")
-    client = AsyncIOMotorClient(f"mongodb://{mongo_settings.DB_HOST}:{mongo_settings.DB_PORT}/ai-chat")
+    logger.info("MONGO_URL:", mongo_settings.MONGO_URL)
+    client = AsyncIOMotorClient(mongo_settings.MONGO_URL)
     logger.info("Start mongo connection")
     await init_beanie(
         database=client.ai_chat,
