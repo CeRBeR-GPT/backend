@@ -12,6 +12,7 @@ from config_data.config import Config, load_config
 from src.users.routers import router as user_router, auth_router
 from src.ai_chat.routers import router as chat_router
 from src.transactions.routers import router as transaction_router
+from statistic.mongo_client import init_mongo
 
 settings: Config = load_config(".env")
 
@@ -19,6 +20,7 @@ settings: Config = load_config(".env")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     os.system("alembic upgrade head")
+    await init_mongo()
     yield
 
 

@@ -3,9 +3,9 @@ import websockets
 
 
 async def chat_client():
-    token = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoiYWNjZXNzIiwic3ViIjoic3RyaW5nIiwidXVpZCI6ImE5YmY1NDYyLWMwYTEtNDdmYy05OTgyLTZlZDc4MGIxNjgzNSIsImV4cCI6MTc0MjEyMTE0NSwiaWF0IjoxNzQyMDM0NzQ1fQ.QNQTatBvWXD03pkxnConcWubbiU1x93hidIlUc2zPisCxQRN20J4L7vLDQ_VYTiT588oC3h69X0OqzpN8X-Jj0We9ngbg1SAeypyLi6S2SdNBlnxqAzpVFC55XmC0-nubjjqUYiJwFkye-vDeASt-xOQWJvArvQm27PQZLHXNCFA5J-n3-cd_OYH4Xqm3I4hnGO4jdXJjx-RyA9UbD1r8dc772TUD9QAZ-n1UhXcI28gh_IMsc2s_sIr6B_XrS6URBz1eZR-KqxuA57TcDxREmYNDDxD0YxU8Arkqrl0-uqTdcUVreZ_UCODFv22nhCZYT26Ct3c4sAhiEj8dy0KVw"
+    token = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoiYWNjZXNzIiwic3ViIjoic3RyaW5nIiwidXVpZCI6ImE5YmY1NDYyLWMwYTEtNDdmYy05OTgyLTZlZDc4MGIxNjgzNSIsImV4cCI6MTc0NDYyMjYwOSwiaWF0IjoxNzQ0NjIxNDA5fQ.A08WS3x681r9NCAD3WC7-cNP_EMKnDS-eQB88Wt1zh2TvjX5XJKleg3puyRYuRVmDbXEPLiThQnNBQskp5DpZFWgQ4kt1nYnqvPgyvimRJELkOr1HBketKBErqSeq_lo_f-aaQSoVUpFXPegs7Nv25cD-u1-1s_09ud9q9qqNRrXIRcoi3cBXhsph_22gM5e9lbTmZFpeP-lwznD_-yHZOVbp-uvm9G0Zx8PpEsfQ-DS36RkVkP6zs897Na8m1FK66F87G9MuR_Bd5JMAesSXvXMSa8jyaGusSz7FQJFZ95j6WC54dslQhz54tNZXYbuJcDAzZ80Y7VlRi_xy1t_FA"
     chat_id = "80c79797-d145-4c02-92e8-35b64d5e3eb3"
-    uri = f"ws://localhost:8000/chat/ws/{chat_id}?token={token}"
+    uri = f"ws://localhost/chat/ws/{chat_id}?token={token}&provider=default"
 
     async with websockets.connect(uri) as websocket:
         print("Connected to WebSocket server. Type 'exit' to quit.")

@@ -13,6 +13,8 @@ from src.transactions.schemas import AvailableProviders
 from src.users.models import User, plan_settings
 from src.users.repositories import UserRepository
 from src.users.services import UserService
+from statistic.schemas import UserDocument
+from statistic.utils import get_or_create_user
 
 from utils.ai_settings import generate_ai_response
 
@@ -86,6 +88,7 @@ class AIChatService:
                     continue
 
                 current_user = await UserRepository().update_available_messages_count(current_user, -1)
+                mongo_user: UserDocument = await get_or_create_user(user_id=current_user.id)
 
                 await AIChatService().create_new_message(
                     current_user, user_message, chat_id, MessageBelong.user_message
@@ -100,6 +103,8 @@ class AIChatService:
                         websocket
                     )
                     continue
+
+                await mongo_user.add_message(provider=provider)
 
                 await AIChatService().create_new_message(
                     current_user, ai_response, chat_id, MessageBelong.assistant_message
