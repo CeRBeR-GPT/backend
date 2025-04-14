@@ -28,7 +28,7 @@ class MongoDB:
 
     @property
     def MONGO_URL(self):
-        return f"mongodb://{self.DB_USER}:{self.DB_PASS}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+        return f"mongodb://{self.DB_USER}:{self.DB_PASS}@{self.DB_HOST}:{self.DB_PORT}"
 
 
 @dataclass
