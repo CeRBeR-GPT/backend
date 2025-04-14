@@ -4,13 +4,18 @@ import uuid
 from beanie import init_beanie
 from motor.motor_asyncio import AsyncIOMotorClient
 
+from config_data.config import Config, load_config
 from src.transactions.schemas import AvailableProviders
 from statistic.schemas import UserDocument
 from statistic.utils import get_or_create_user
 
 
+config: Config = load_config()
+mongo_settings = config.mongoDB
+
+
 async def init_mongo():
-    client = AsyncIOMotorClient("mongodb://localhost:27017/ai-chat")
+    client = AsyncIOMotorClient(f"mongodb://{mongo_settings.DB_HOST}:{mongo_settings.DB_PORT}/ai-chat")
     await init_beanie(
         database=client.ai_chat,
         document_models=[UserDocument]
