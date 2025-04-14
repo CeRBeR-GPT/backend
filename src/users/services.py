@@ -9,14 +9,16 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import RedirectResponse
 from datetime import timedelta
 from urllib.parse import urlencode
-from typing import Optional
+from typing import Optional, List
 
 from src.users.models import User, OAuthProvider, Plans, Feedback
 from src.users.repositories import UserRepository
-from src.users.schemas import UserCreate, TokenData, UserLogin, FeedbackCreate, FeedbackResponse
+from src.users.schemas import UserCreate, TokenData, UserLogin, FeedbackCreate
 from src.users.exceptions import CredentialException, TokenTypeException, UserNotFoundException, AccessException, \
     EmailExistsException, IncorrectEmailAddressException, IncorrectVerifyCodeException, EmailSenderException, \
     OAuthServiceNotFoundException, InvalidOAuthStateException
+from statistic.schemas import UserDocument, DayStatistic
+from statistic.utils import get_or_create_user
 
 from tasks.celery_worker import task_send_to_email, task_send_feedback
 from config_data.config import Config, load_config
@@ -163,6 +165,10 @@ class UserService:
 
         await self.repository.delete_verify_code_by_id(verify_code.id)
         return True
+
+    async def get_user_statistic(self, user: User) -> List[DayStatistic]:
+        mongo_user: UserDocument = await get_or_create_user(user_id=user.id)
+        return mongo_user.statistics
 
     @staticmethod
     def create_jwt(

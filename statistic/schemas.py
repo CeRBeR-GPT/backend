@@ -28,6 +28,11 @@ class DayStatistic(BaseModel):
         return new_provider
 
 
+class StatisticResponse(BaseModel):
+    user_id: uuid.UUID
+    statistics: List[DayStatistic]
+
+
 class UserDocument(Document):
     user_id: uuid.UUID = Field(..., unique=True)
     statistics: List[DayStatistic] = []

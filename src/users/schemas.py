@@ -1,10 +1,11 @@
 import uuid
 import datetime
 
-from typing import Annotated
+from typing import Annotated, List
 from pydantic import BaseModel, Field
 
 from src.users.models import Plans
+from statistic.schemas import DayStatistic
 
 
 class SuccessfulResponse(BaseModel):
@@ -47,6 +48,7 @@ class UserResponse(BaseModel):
     available_message_count: int
     message_length_limit: int
     message_count_limit: int
+    statistics: List[DayStatistic]
 
 
 class FeedbackCreate(BaseModel):

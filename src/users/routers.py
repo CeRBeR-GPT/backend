@@ -99,11 +99,6 @@ async def edit_user_password(
 async def login_for_access_token(
         current_user: Annotated[User, Depends(UserService().get_current_user)]
 ) -> UserResponse:
-    return UserResponse(**current_user.to_dict())
-
-# @router.delete("/", response_model=SuccessfulResponse)
-# async def delete_user(
-#         current_user: Annotated[User, Depends(UserService().get_current_user)]
-# ) -> SuccessfulResponse:
-#     await UserService().delete_user(current_user)
-#     return SuccessfulResponse()
+    user_dict = current_user.to_dict()
+    user_dict["statistics"] = await UserService().get_user_statistic(current_user)
+    return UserResponse(**user_dict)
