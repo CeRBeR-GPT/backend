@@ -16,7 +16,7 @@ class ProviderStatistic(BaseModel):
 
 class DayStatistic(BaseModel):
     day: date = Field(default_factory=date.today)
-    providers: List[ProviderStatistic] = []
+    providers: List[ProviderStatistic] = Field(default_factory=list)
 
     def get_provider(self, provider_name: str) -> ProviderStatistic:
         for provider in self.providers:
@@ -42,7 +42,7 @@ class UserDocument(Document):
 
     async def add_message(
             self,
-            provider_name: str,
+            provider: AvailableProviders,
             count: int = 1,
             target_date: date = date.today()
     ) -> None:
@@ -55,7 +55,7 @@ class UserDocument(Document):
             day_stat = DayStatistic(day=target_date)
             self.statistics.append(day_stat)
 
-        provider = day_stat.get_provider(provider_name)
+        provider = day_stat.get_provider(provider.value)
         provider.messages_sent += count
         provider.last_activity = datetime.now()
 
