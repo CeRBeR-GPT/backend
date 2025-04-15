@@ -17,13 +17,15 @@ from src.users.schemas import UserCreate, TokenData, UserLogin, FeedbackCreate
 from src.users.exceptions import CredentialException, TokenTypeException, UserNotFoundException, AccessException, \
     EmailExistsException, IncorrectEmailAddressException, IncorrectVerifyCodeException, EmailSenderException, \
     OAuthServiceNotFoundException, InvalidOAuthStateException
+
 from statistic.schemas import UserDocument, DayStatistic
 from statistic.utils import get_or_create_user
-
 from tasks.celery_worker import task_send_to_email, task_send_feedback
+
+from config_data.constants import welcome_messages
 from config_data.config import Config, load_config
 
-from utils.email_sender import generate_confirmation_mode, send_feedback
+from utils.email_sender import generate_confirmation_mode
 from utils.jwt_settings import validate_password, decode_jwt, encode_jwt
 from utils.oauth2_settings import get_google_oauth_email, get_yandex_oauth_email, get_github_oauth_email
 
@@ -246,7 +248,17 @@ class UserService:
         if await self.repository.get_user_by_email(user.email) is not None:
             raise EmailExistsException()
 
-        return await self.repository.create_user(user)
+        new_user = await self.repository.create_user(user)
+
+        from src.ai_chat.services import AIChatService
+        from src.ai_chat.models import MessageBelong
+
+        welcome_chat = await AIChatService().create_new_chat(new_user, welcome_messages.WELCOME_CHAT_NAME)
+        await AIChatService().create_new_message(
+            new_user, welcome_messages.WELCOME_CHAT_MESSAGE, welcome_chat.id, MessageBelong.assistant_message
+        )
+
+        return new_user
 
     async def edit_user_password(self, user: User, password: str) -> User:
         return await self.repository.edit_password(user, password)
