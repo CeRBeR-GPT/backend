@@ -4,7 +4,7 @@ from celery import Celery
 from celery.schedules import crontab
 
 from src.users.repositories import UserRepository
-from utils.email_sender import send_verification_code, send_feedback
+from utils.email_sender import send_letter
 from config_data.config import Config, load_config
 
 settings: Config = load_config()
@@ -37,18 +37,8 @@ celery_app.conf.update(
     default_retry_delay=60,
     acks_late=True
 )
-def task_send_to_email(self, email, code):  # noqa: F841
-    send_verification_code(email, code)
-
-
-@celery_app.task(
-    bind=True,
-    max_retries=5,
-    default_retry_delay=60,
-    acks_late=True
-)
-def task_send_feedback(self, name: str, message: str, email: str):  # noqa: F841
-    return send_feedback(name, message, email)
+def task_send_to_email(self, subject, body, address):  # noqa: F841
+    send_letter(subject=subject, body=body, address=address)
 
 
 @celery_app.task(

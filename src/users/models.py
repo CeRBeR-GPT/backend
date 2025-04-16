@@ -98,6 +98,11 @@ plan_settings = {
 }
 
 
+class CodeType(Enum):
+    for_registration = "registration"
+    for_reset_password = "reset_password"
+
+
 class User(Base):
     __tablename__ = "users"
 
@@ -136,7 +141,8 @@ class VerifyCode(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     email: Mapped[str] = mapped_column(String(50), unique=True)
-    code: Mapped[int] = mapped_column()
+    code: Mapped[int] = mapped_column(nullable=False)
+    type: Mapped[CodeType] = mapped_column(nullable=False)
 
 
 class Feedback(Base):

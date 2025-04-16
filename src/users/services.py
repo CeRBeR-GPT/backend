@@ -1,6 +1,7 @@
 import secrets
 import smtplib
 import uuid
+import random
 import jwt
 import logging
 
@@ -20,12 +21,11 @@ from src.users.exceptions import CredentialException, TokenTypeException, UserNo
 
 from statistic.schemas import UserDocument, DayStatistic
 from statistic.utils import get_or_create_user
-from tasks.celery_worker import task_send_to_email, task_send_feedback
+from tasks.celery_worker import task_send_to_email
 
-from config_data.constants import welcome_messages
+from config_data.constants import messages
 from config_data.config import Config, load_config
 
-from utils.email_sender import generate_confirmation_mode
 from utils.jwt_settings import validate_password, decode_jwt, encode_jwt
 from utils.oauth2_settings import get_google_oauth_email, get_yandex_oauth_email, get_github_oauth_email
 
@@ -37,6 +37,7 @@ logger = logging.getLogger(__name__)
 settings: Config = load_config(".env")
 auth_config = settings.authJWT
 variables = settings.variablesData
+email_sender = settings.email_sender
 
 TOKEN_TYPE_FIELD = "type"
 ACCESS_TOKEN_TYPE = "access"
@@ -45,6 +46,10 @@ REFRESH_TOKEN_TYPE = "refresh"
 
 class UserService:
     repository = UserRepository()
+
+    @staticmethod
+    def generate_confirmation_mode():
+        return random.randint(email_sender.MIN_CODE, email_sender.MAX_CODE)
 
     async def get_oauth2_redirect(self, request: Request, service: OAuthProvider) -> RedirectResponse:
         service_data = service.value
@@ -135,26 +140,56 @@ class UserService:
         return response
 
     async def send_feedback(self, new_feedback: FeedbackCreate, user: User) -> Feedback:
-        task_send_feedback.delay(new_feedback.name, new_feedback.message, user.email)
+        message = messages.LETTER_FEEDBACK_MESSAGE.format(from_email=user.email, message=new_feedback)
+        try:
+            task_send_to_email.delay(
+                subject=messages.LETTER_FEEDBACK_TITLE,
+                body=message,
+                address=email_sender.ADMIN_EMAIL
+            )
+        except Exception:
+            raise EmailSenderException()
+
         return await self.repository.create_feedback(new_feedback, user.email)
 
-    async def get_verify_code(self, email: str) -> None:
+    async def get_registration_verify_code(self, email: str) -> None:
         potential_user = await self.repository.get_user_by_email(email)
         if potential_user is not None:
             raise EmailExistsException()
 
-        try:
-            code = generate_confirmation_mode()
-            task_send_to_email.delay(email, code)
-            potential_code = await self.repository.get_verify_code_by_email(email)
-            if potential_code is not None:
-                await self.repository.update_verify_code(email, code)
-            else:
-                await self.repository.create_verify_code(email, code)
+        code = self.generate_confirmation_mode()
+        message = messages.LETTER_CONFIRMATION_MESSAGE.format(code=code)
+        potential_code = await self.repository.get_verify_code_by_email(email)
+        if potential_code is not None:
+            await self.repository.update_verify_code(email, code)
+        else:
+            await self.repository.create_verify_code(email, code)
 
-        except smtplib.SMTPRecipientsRefused as e:
-            raise IncorrectEmailAddressException()
-        except Exception as e:
+        try:
+            task_send_to_email.delay(
+                subject=messages.LETTER_REGISTRATION_TITLE,
+                body=message,
+                address=email
+            )
+        except Exception:
+            raise EmailSenderException()
+
+    async def get_edit_password_verify_code(self, user: User) -> None:
+        code = self.generate_confirmation_mode()
+        message = messages.LETTER_CONFIRMATION_MESSAGE.format(code=code)
+        potential_code = await self.repository.get_verify_code_by_email(user.email)
+        if potential_code is not None:
+            await self.repository.update_verify_code(user.email, code)
+        else:
+            await self.repository.create_verify_code(user.email, code)
+
+        try:
+            task_send_to_email.delay(
+                subject=messages.LETTER_PASSWORD_RESET_TITLE,
+                body=message,
+                address=user.email
+            )
+        except Exception:
             raise EmailSenderException()
 
     async def check_verify_code(self, email: str, code: int) -> bool:
@@ -253,9 +288,9 @@ class UserService:
         from src.ai_chat.services import AIChatService
         from src.ai_chat.models import MessageBelong
 
-        welcome_chat = await AIChatService().create_new_chat(new_user, welcome_messages.WELCOME_CHAT_NAME)
+        welcome_chat = await AIChatService().create_new_chat(new_user, messages.WELCOME_CHAT_NAME)
         await AIChatService().create_new_message(
-            new_user, welcome_messages.WELCOME_CHAT_MESSAGE, welcome_chat.id, MessageBelong.assistant_message
+            new_user, messages.WELCOME_CHAT_MESSAGE, welcome_chat.id, MessageBelong.assistant_message
         )
 
         return new_user

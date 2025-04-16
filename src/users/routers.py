@@ -42,7 +42,7 @@ async def github_auth_callback(request: Request, code: str, state: str):
 
 @router.get("/register/verify_code", response_model=SuccessfulGetVerifyCodeResponse)
 async def get_verify_code_by_email(email: str) -> SuccessfulGetVerifyCodeResponse:
-    await UserService().get_verify_code(email)
+    await UserService().get_registration_verify_code(email)
     return SuccessfulGetVerifyCodeResponse()
 
 
@@ -93,6 +93,14 @@ async def edit_user_password(
     access_token = UserService().create_access_token(user)
     refresh_token = UserService().create_refresh_token(user)
     return Token(access_token=access_token, refresh_token=refresh_token)
+
+
+@router.get("/secure_verify_code")
+async def get_verify_code_by_email(
+        current_user: Annotated[User, Depends(UserService().get_current_user)],
+) -> SuccessfulGetVerifyCodeResponse:
+    await UserService().get_edit_password_verify_code(current_user)
+    return SuccessfulGetVerifyCodeResponse()
 
 
 @router.get("/self", response_model=UserResponse)

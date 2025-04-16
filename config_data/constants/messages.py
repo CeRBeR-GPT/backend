@@ -29,3 +29,9 @@ WELCOME_CHAT_MESSAGE = \
 
 Если у вас есть вопросы, просто напишите, и я помогу вам!
 """
+
+LETTER_REGISTRATION_TITLE = "Регистрация в CeRBeR-AI"
+LETTER_CONFIRMATION_MESSAGE = "Ваш код подтверждения: {code}\n\nЭто сообщение отправлено автоматически."
+LETTER_PASSWORD_RESET_TITLE = "Подтверждения сброса пароля"
+LETTER_FEEDBACK_TITLE = "Обратная связь от {name}"
+LETTER_FEEDBACK_MESSAGE = "Пользователь {from_email} оставил обратную связь:\n\n{message}"
