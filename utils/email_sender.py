@@ -24,7 +24,7 @@ def send_letter(
     msg['Subject'] = subject
 
     msg.attach(MIMEText(body, 'plain'))
-    smtp_server.sendmail(email_sender.EMAIL_NAME, email_sender.ADMIN_EMAIL, msg.as_string())
+    smtp_server.sendmail(email_sender.EMAIL_NAME, address, msg.as_string())
 
     return body
 
