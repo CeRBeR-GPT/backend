@@ -20,7 +20,6 @@ settings: Config = load_config(".env")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     os.system("alembic upgrade head")
-    await init_mongo()
     yield
 
 

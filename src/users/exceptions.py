@@ -71,6 +71,17 @@ class TokenTypeException(HTTPException):
         super().__init__(status_code=self.status_code, detail=self.detail)
 
 
+class CodeTypeException(HTTPException):
+    def __new__(cls, *args, **kwargs):
+        cls.detail = f"Invalid code type {args[0]!r} expected {args[1]!r}"
+        cls.status_code = status.HTTP_401_UNAUTHORIZED
+
+        return super().__new__(cls)
+
+    def __init__(self, *args):  # noqa
+        super().__init__(status_code=self.status_code, detail=self.detail)
+
+
 class UserNotFoundException(HTTPException):
     status_code = status.HTTP_404_NOT_FOUND
     detail = "User not found"

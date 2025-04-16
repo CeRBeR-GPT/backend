@@ -8,7 +8,7 @@ from config_data.config import Config, load_config
 from utils import jwt_settings
 from src.database import async_session
 
-from src.users.models import User, VerifyCode, Plans, plan_settings, Feedback
+from src.users.models import User, VerifyCode, Plans, plan_settings, Feedback, CodeType
 from src.users.schemas import UserCreate, FeedbackCreate
 from src.ai_chat.models import Message
 
@@ -17,9 +17,9 @@ settings: Config = load_config(".env")
 
 class UserRepository:
 
-    async def create_verify_code(self, email: str, code: int) -> None:
+    async def create_verify_code(self, email: str, code: int, code_type: CodeType) -> None:
         async with async_session() as session:
-            stmt = insert(VerifyCode).values(email=email, code=code)
+            stmt = insert(VerifyCode).values(email=email, code=code, type=code_type)
             await session.execute(stmt)
             await session.commit()
 
@@ -42,9 +42,9 @@ class UserRepository:
 
         return await self.get_feedback_by_id(feedback_id)
 
-    async def update_verify_code(self, email: str, code: int) -> None:
+    async def update_verify_code(self, email: str, code: int, code_type: CodeType) -> None:
         async with async_session() as session:
-            stmt = update(VerifyCode).where(VerifyCode.email == email).values(code=code)
+            stmt = update(VerifyCode).where(VerifyCode.email == email).values(code=code, type=code_type)
             await session.execute(stmt)
             await session.commit()
 

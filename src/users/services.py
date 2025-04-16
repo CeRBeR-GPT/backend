@@ -1,5 +1,4 @@
 import secrets
-import smtplib
 import uuid
 import random
 import jwt
@@ -12,12 +11,12 @@ from datetime import timedelta
 from urllib.parse import urlencode
 from typing import Optional, List
 
-from src.users.models import User, OAuthProvider, Plans, Feedback
+from src.users.models import User, OAuthProvider, Plans, Feedback, CodeType
 from src.users.repositories import UserRepository
 from src.users.schemas import UserCreate, TokenData, UserLogin, FeedbackCreate
 from src.users.exceptions import CredentialException, TokenTypeException, UserNotFoundException, AccessException, \
     EmailExistsException, IncorrectEmailAddressException, IncorrectVerifyCodeException, EmailSenderException, \
-    OAuthServiceNotFoundException, InvalidOAuthStateException
+    OAuthServiceNotFoundException, InvalidOAuthStateException, CodeTypeException
 
 from statistic.schemas import UserDocument, DayStatistic
 from statistic.utils import get_or_create_user
@@ -140,10 +139,10 @@ class UserService:
         return response
 
     async def send_feedback(self, new_feedback: FeedbackCreate, user: User) -> Feedback:
-        message = messages.LETTER_FEEDBACK_MESSAGE.format(from_email=user.email, message=new_feedback)
+        message = messages.LETTER_FEEDBACK_MESSAGE.format(from_email=user.email, message=new_feedback.message)
         try:
             task_send_to_email.delay(
-                subject=messages.LETTER_FEEDBACK_TITLE,
+                subject=messages.LETTER_FEEDBACK_TITLE.format(name=new_feedback.name),
                 body=message,
                 address=email_sender.ADMIN_EMAIL
             )
@@ -161,9 +160,9 @@ class UserService:
         message = messages.LETTER_CONFIRMATION_MESSAGE.format(code=code)
         potential_code = await self.repository.get_verify_code_by_email(email)
         if potential_code is not None:
-            await self.repository.update_verify_code(email, code)
+            await self.repository.update_verify_code(email, code, CodeType.for_registration)
         else:
-            await self.repository.create_verify_code(email, code)
+            await self.repository.create_verify_code(email, code, CodeType.for_registration)
 
         try:
             task_send_to_email.delay(
@@ -179,9 +178,9 @@ class UserService:
         message = messages.LETTER_CONFIRMATION_MESSAGE.format(code=code)
         potential_code = await self.repository.get_verify_code_by_email(user.email)
         if potential_code is not None:
-            await self.repository.update_verify_code(user.email, code)
+            await self.repository.update_verify_code(user.email, code, CodeType.for_reset_password)
         else:
-            await self.repository.create_verify_code(user.email, code)
+            await self.repository.create_verify_code(user.email, code, CodeType.for_reset_password)
 
         try:
             task_send_to_email.delay(
@@ -192,15 +191,18 @@ class UserService:
         except Exception:
             raise EmailSenderException()
 
-    async def check_verify_code(self, email: str, code: int) -> bool:
+    async def check_verify_code(self, email: str, code: int, excepted_type: CodeType) -> bool:
         verify_code = await self.repository.get_verify_code_by_email(email)
+
+        if verify_code.type != excepted_type:
+            raise CodeTypeException(verify_code.type.value, excepted_type.value)
         if verify_code is None:
             raise IncorrectEmailAddressException()
-
         if verify_code.code != code:
             raise IncorrectVerifyCodeException()
 
         await self.repository.delete_verify_code_by_id(verify_code.id)
+
         return True
 
     async def get_user_statistic(self, user: User) -> List[DayStatistic]:

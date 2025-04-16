@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Request
 from typing import Annotated
 
-from src.users.models import User, OAuthProvider
+from src.users.models import User, OAuthProvider, CodeType
 from src.users.schemas import UserCreate, Token, UserResponse, SuccessfulResponse, SuccessfulGetVerifyCodeResponse, \
     SuccessfulValidation, FeedbackResponse, FeedbackCreate
 from src.users.services import UserService
@@ -48,7 +48,7 @@ async def get_verify_code_by_email(email: str) -> SuccessfulGetVerifyCodeRespons
 
 @router.post("/register/verify_code", response_model=SuccessfulValidation)
 async def check_code_from_email(email: str, code: int) -> SuccessfulValidation:
-    if await UserService().check_verify_code(email, code):
+    if await UserService().check_verify_code(email, code, CodeType.for_registration):
         return SuccessfulValidation()
 
 
@@ -101,6 +101,15 @@ async def get_verify_code_by_email(
 ) -> SuccessfulGetVerifyCodeResponse:
     await UserService().get_edit_password_verify_code(current_user)
     return SuccessfulGetVerifyCodeResponse()
+
+
+@router.post("/secure_verify_code", response_model=SuccessfulValidation)
+async def check_code_from_email(
+        current_user: Annotated[User, Depends(UserService().get_current_user)],  # noqa
+        email: str, code: int
+) -> SuccessfulValidation:
+    if await UserService().check_verify_code(email, code, CodeType.for_reset_password):
+        return SuccessfulValidation()
 
 
 @router.get("/self", response_model=UserResponse)
