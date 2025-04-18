@@ -115,16 +115,16 @@ class UserRepository:
 
     async def reset_users_plan_to_default(self) -> None:
         current_date = datetime.date.today()
-        timedelta = datetime.timedelta(days=28)
 
         default_plan_about = plan_settings[Plans.default.value]
         new_message_length_limit = default_plan_about["max_length"]
         new_message_count_limit = default_plan_about["count_limit"]
 
         async with async_session() as session:
-            stmt = update(User).where(User.plan_purchase_date + timedelta < current_date).values(
+            stmt = update(User).where(User.plan_expire_date < current_date).values(
                 plan=Plans.default,
                 plan_purchase_date=datetime.date.today(),
+                plan_expire_date=datetime.date.today() + datetime.timedelta(days=28),
                 available_message_count=new_message_count_limit,
                 message_length_limit=new_message_length_limit,
                 message_count_limit=new_message_count_limit
@@ -152,10 +152,14 @@ class UserRepository:
         new_plan_about = plan_settings[plan.value]
         new_message_length_limit = new_plan_about["max_length"]
         new_message_count_limit = new_plan_about["count_limit"]
+
+        user = await self.get_user_by_id(user_id)
+
         async with async_session() as session:
             stmt = update(User).where(User.id == user_id).values(
                 plan=plan,
                 plan_purchase_date=datetime.date.today(),
+                plan_expire_date=user.plan_expire_date + datetime.timedelta(days=28),
                 available_message_count=new_message_count_limit,
                 message_length_limit=new_message_length_limit,
                 message_count_limit=new_message_count_limit

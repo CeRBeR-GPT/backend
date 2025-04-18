@@ -46,7 +46,7 @@ class TransactionService:
         if new_plan_about["price"] <= 0:
             raise FreePlanException()
 
-        if current_plan_about["price"] - new_plan_about["price"] >= 0:
+        if current_plan_about["price"] - new_plan_about["price"] > 0.001:
             raise WeakerPlanException()
 
         amount = new_plan_about["price"]
