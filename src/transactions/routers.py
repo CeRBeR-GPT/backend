@@ -43,7 +43,7 @@ async def payment_confirm(request: Request) -> UserResponse:
         payment_id = req_json["object"]["id"]
 
         transaction = await TransactionService().confirm_payment(payment_id)
-        user = await UserService().update_user_plan(transaction.user_id, transaction.plan)
+        user = await UserService().update_user_plan(transaction.user_id, transaction.plan, transaction.plan_expire_date)
 
         return UserResponse(**user.to_dict())
 

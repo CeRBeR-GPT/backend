@@ -148,18 +148,16 @@ class UserRepository:
             await session.execute(stmt)
             await session.commit()
 
-    async def update_user_plan(self, user_id: uuid.UUID, plan: Plans) -> User:
+    async def update_user_plan(self, user_id: uuid.UUID, plan: Plans, plan_expire_date: datetime.date) -> User:
         new_plan_about = plan_settings[plan.value]
         new_message_length_limit = new_plan_about["max_length"]
         new_message_count_limit = new_plan_about["count_limit"]
-
-        user = await self.get_user_by_id(user_id)
 
         async with async_session() as session:
             stmt = update(User).where(User.id == user_id).values(
                 plan=plan,
                 plan_purchase_date=datetime.date.today(),
-                plan_expire_date=user.plan_expire_date + datetime.timedelta(days=28),
+                plan_expire_date=plan_expire_date,
                 available_message_count=new_message_count_limit,
                 message_length_limit=new_message_length_limit,
                 message_count_limit=new_message_count_limit

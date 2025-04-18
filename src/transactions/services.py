@@ -1,4 +1,5 @@
 import uuid
+import datetime
 
 from copy import deepcopy
 from typing import List
@@ -49,6 +50,9 @@ class TransactionService:
         if current_plan_about["price"] - new_plan_about["price"] > 0.001:
             raise WeakerPlanException()
 
+        plan_expire_date = datetime.date.today() + datetime.timedelta(days=28) if plan != user.plan \
+            else user.plan_expire_date + datetime.timedelta(days=28)
+
         amount = new_plan_about["price"]
         idempotency_key = uuid.uuid4()
         return_url = settings.variablesData.FRONTEND_HOST
@@ -62,7 +66,9 @@ class TransactionService:
         transaction_id = transaction.id
         confirmation_url = transaction.confirmation.confirmation_url
 
-        await self.repository.create_transaction(transaction_id, user.id, idempotency_key, plan, amount)
+        await self.repository.create_transaction(
+            transaction_id, user.id, idempotency_key, plan, plan_expire_date, amount
+        )
 
         return confirmation_url
 

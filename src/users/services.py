@@ -1,3 +1,4 @@
+import datetime
 import secrets
 import uuid
 import random
@@ -321,8 +322,8 @@ class UserService:
             raise UserNotFoundException()
         return user
 
-    async def update_user_plan(self, user_id: uuid.UUID, plan: Plans) -> User:
-        return await self.repository.update_user_plan(user_id, plan)
+    async def update_user_plan(self, user_id: uuid.UUID, plan: Plans, plan_expire_date: datetime.date) -> User:
+        return await self.repository.update_user_plan(user_id, plan, plan_expire_date)
 
     async def change_verified_status(self, user_id: uuid.UUID) -> User:
         user = await self.get_user_by_id(user_id)
