@@ -74,7 +74,7 @@ async def daily_users_update(repo: UserRepository):
 celery_app.conf.beat_schedule = {
     'task-daily-messages': {
         'task': 'tasks.celery_worker.task_daily_users_update',
-        'schedule': crontab(hour="7", minute="38"),
+        'schedule': crontab(hour="21", minute="00"),
     },
 }
 
