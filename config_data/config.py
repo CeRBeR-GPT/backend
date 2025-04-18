@@ -25,6 +25,7 @@ class MongoDB:
     DB_USER: str
     DB_PASS: str
     DB_NAME: str
+    MONGO_LOCAL_URL: str
 
     @property
     def MONGO_URL(self):
@@ -135,7 +136,8 @@ def load_config(path: str | None = None) -> Config:
             DB_PORT=env("MONGODB_PORT"),
             DB_USER=env("MONGODB_USER"),
             DB_PASS=env("MONGODB_PASS"),
-            DB_NAME=env("MONGODB_NAME")
+            DB_NAME=env("MONGODB_NAME"),
+            MONGO_LOCAL_URL=env("MONGODB_LOCAL_URL")
         ),
         redis=RedisConf(
             REDIS_HOST=env("REDIS_HOST"),

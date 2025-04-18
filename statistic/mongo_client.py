@@ -9,7 +9,10 @@ mongo_settings = config.mongoDB
 
 
 async def init_mongo():
-    client = AsyncIOMotorClient(mongo_settings.MONGO_URL)
+    if config.variablesData.MODE == "PROD":
+        client = AsyncIOMotorClient(mongo_settings.MONGO_URL)
+    else:
+        client = AsyncIOMotorClient(mongo_settings.MONGO_LOCAL_URL)
     await init_beanie(
         database=client.ai_chat,
         document_models=[UserDocument]

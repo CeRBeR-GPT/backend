@@ -47,23 +47,34 @@ def task_send_to_email(self, subject, body, address):  # noqa: F841
     default_retry_delay=300,
     acks_late=True
 )
-def task_daily_users_update(*args):  # noqa: F841
-    asyncio.run(daily_users_update())
+def task_daily_users_update(self):
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+    try:
+        repo = UserRepository()
+
+        result = loop.run_until_complete(daily_users_update(repo))
+        return result
+    except Exception as e:
+        self.retry(exc=e)
+    finally:
+        loop.close()
+        asyncio.set_event_loop(None)
 
 
-async def daily_users_update():
-    repo = UserRepository()
+async def daily_users_update(repo: UserRepository):
     await repo.reset_available_messages()
     await repo.reset_users_plan_to_default()
+    await repo.reset_users_plan_to_default()
     await repo.delete_old_default_users_messages()
-
     return "successful update!"
 
 
 celery_app.conf.beat_schedule = {
     'task-daily-messages': {
         'task': 'tasks.celery_worker.task_daily_users_update',
-        'schedule': crontab(hour="21", minute="00"),
+        'schedule': crontab(hour="7", minute="38"),
     },
 }
 
