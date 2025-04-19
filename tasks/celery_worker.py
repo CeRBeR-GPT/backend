@@ -2,6 +2,7 @@ import asyncio
 
 from celery import Celery
 from celery.schedules import crontab
+from fastapi import UploadFile
 
 from src.users.repositories import UserRepository
 from utils.email_sender import send_letter
@@ -37,8 +38,10 @@ celery_app.conf.update(
     default_retry_delay=60,
     acks_late=True
 )
-def task_send_to_email(self, subject, body, address):  # noqa: F841
-    send_letter(subject=subject, body=body, address=address)
+def task_send_to_email(
+        self, subject: str, body: str, address: str, file_content: str, file_name: str  # noqa: F841
+) -> str:
+    return send_letter(subject=subject, body=body, address=address, file_content=file_content, file_name=file_name)
 
 
 @celery_app.task(

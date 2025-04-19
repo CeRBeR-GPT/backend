@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Depends, Request
-from typing import Annotated
+from fastapi import APIRouter, Depends, Request, UploadFile
+from typing import Annotated, Optional
 
 from src.users.models import User, OAuthProvider, CodeType
-from src.users.schemas import UserCreate, Token, UserResponse, SuccessfulResponse, SuccessfulGetVerifyCodeResponse, \
+from src.users.schemas import UserCreate, Token, UserResponse, SuccessfulGetVerifyCodeResponse, \
     SuccessfulValidation, FeedbackResponse, FeedbackCreate
 from src.users.services import UserService
 
@@ -55,9 +55,12 @@ async def check_code_from_email(email: str, code: int) -> SuccessfulValidation:
 @router.post("/feedback", response_model=FeedbackResponse)
 async def send_feedback(
         current_user: Annotated[User, Depends(UserService().get_current_user)],
-        new_feedback: FeedbackCreate
+        name: str,
+        message: str,
+        # new_feedback: FeedbackCreate,
+        file: Optional[UploadFile] = None
 ) -> FeedbackResponse:
-    feedback = await UserService().send_feedback(new_feedback, current_user)
+    feedback = await UserService().send_feedback(FeedbackCreate(name=name, message=message), current_user, file)
     return FeedbackResponse(**feedback.to_dict())
 
 

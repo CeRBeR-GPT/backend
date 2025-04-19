@@ -5,7 +5,7 @@ import random
 import jwt
 import logging
 
-from fastapi import Depends, Request
+from fastapi import Depends, Request, UploadFile
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import RedirectResponse
 from datetime import timedelta
@@ -17,13 +17,13 @@ from src.users.repositories import UserRepository
 from src.users.schemas import UserCreate, TokenData, UserLogin, FeedbackCreate
 from src.users.exceptions import CredentialException, TokenTypeException, UserNotFoundException, AccessException, \
     EmailExistsException, IncorrectEmailAddressException, IncorrectVerifyCodeException, EmailSenderException, \
-    OAuthServiceNotFoundException, InvalidOAuthStateException, CodeTypeException
+    OAuthServiceNotFoundException, InvalidOAuthStateException, CodeTypeException, TooLargeFileException
 
 from statistic.schemas import UserDocument, DayStatistic
 from statistic.utils import get_or_create_user
 from tasks.celery_worker import task_send_to_email
 
-from config_data.constants import messages
+from config_data.constants import constants, messages
 from config_data.config import Config, load_config
 
 from utils.jwt_settings import validate_password, decode_jwt, encode_jwt
@@ -139,16 +139,27 @@ class UserService:
 
         return response
 
-    async def send_feedback(self, new_feedback: FeedbackCreate, user: User) -> Feedback:
+    async def send_feedback(
+            self, new_feedback: FeedbackCreate, user: User, file: Optional[UploadFile] = None
+    ) -> Feedback:
+        if file and file.size > constants.MAX_FEEDBACK_FILE_SIZE:
+            raise TooLargeFileException(file.size, constants.MAX_FEEDBACK_FILE_SIZE)
+
         message = messages.LETTER_FEEDBACK_MESSAGE.format(from_email=user.email, message=new_feedback.message)
+
         try:
             task_send_to_email.delay(
                 subject=messages.LETTER_FEEDBACK_TITLE.format(name=new_feedback.name),
                 body=message,
-                address=email_sender.ADMIN_EMAIL
+                address=email_sender.ADMIN_EMAIL,
+                file_content=file.file.read() if file else None,
+                file_name=file.filename if file else None
             )
         except Exception:
             raise EmailSenderException()
+
+        if file:
+            file.file.close()
 
         return await self.repository.create_feedback(new_feedback, user.email)
 

@@ -82,6 +82,17 @@ class CodeTypeException(HTTPException):
         super().__init__(status_code=self.status_code, detail=self.detail)
 
 
+class TooLargeFileException(HTTPException):
+    def __new__(cls, *args, **kwargs):
+        cls.detail = f"Your file size {args[0]!r} bytes, need less {args[1]!r} bytes"
+        cls.status_code = status.HTTP_400_BAD_REQUEST
+
+        return super().__new__(cls)
+
+    def __init__(self, *args):  # noqa
+        super().__init__(status_code=self.status_code, detail=self.detail)
+
+
 class UserNotFoundException(HTTPException):
     status_code = status.HTTP_404_NOT_FOUND
     detail = "User not found"
