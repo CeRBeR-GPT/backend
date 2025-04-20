@@ -57,7 +57,6 @@ async def send_feedback(
         current_user: Annotated[User, Depends(UserService().get_current_user)],
         name: str,
         message: str,
-        # new_feedback: FeedbackCreate,
         file: Optional[UploadFile] = None
 ) -> FeedbackResponse:
     feedback = await UserService().send_feedback(FeedbackCreate(name=name, message=message), current_user, file)

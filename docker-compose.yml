@@ -51,7 +51,7 @@ services:
       retries: 5
     restart: unless-stopped
     volumes:
-      - mongodb_data:/data/db
+      - ./mongodb_data:/data/db
     networks:
       - network
 
@@ -62,10 +62,12 @@ services:
       - "6379:6379"
     networks:
       - network
+    volumes:
+      - ./redis_data:/data
 
   celery_worker:
     build:
-      context: ./backend/
+      context: .
       dockerfile: ./Dockerfile
     container_name: gpt-celery-worker
     env_file:
@@ -79,7 +81,7 @@ services:
 
   celery_beat:
     build:
-      context: ./backend/
+      context: .
       dockerfile: ./Dockerfile
     container_name: gpt-celery-beat
     env_file:
@@ -93,7 +95,7 @@ services:
 
   flower:
     build:
-      context: ./backend/
+      context: .
       dockerfile: ./Dockerfile
     container_name: gpt-flower
     command: celery -A tasks.celery_worker:celery_app flower --port=5555
@@ -109,5 +111,6 @@ networks:
   network:
 
 volumes:
-  mongodb_data:
   pg_data:
+  mongodb_data:
+  redis_data:

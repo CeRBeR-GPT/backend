@@ -2,7 +2,6 @@ import asyncio
 
 from celery import Celery
 from celery.schedules import crontab
-from fastapi import UploadFile
 
 from src.users.repositories import UserRepository
 from utils.email_sender import send_letter
