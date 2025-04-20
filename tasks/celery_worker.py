@@ -1,4 +1,5 @@
 import asyncio
+from typing import Optional
 
 from celery import Celery
 from celery.schedules import crontab
@@ -38,7 +39,12 @@ celery_app.conf.update(
     acks_late=True
 )
 def task_send_to_email(
-        self, subject: str, body: str, address: str, file_content: str, file_name: str  # noqa: F841
+        self,  # noqa: F841
+        subject: str,
+        body: str,
+        address: str,
+        file_content: Optional[str] = None,
+        file_name: Optional[str] = None
 ) -> str:
     return send_letter(subject=subject, body=body, address=address, file_content=file_content, file_name=file_name)
 
