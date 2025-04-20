@@ -1,3 +1,4 @@
+import datetime
 import uuid
 from typing import List
 
@@ -10,7 +11,13 @@ from src.users.models import Plans
 
 class TransactionRepository:
     async def create_transaction(
-            self, transaction_id: str, user_id: uuid.UUID, idempotency_key: uuid.UUID, plan: Plans, amount: float
+            self,
+            transaction_id: str,
+            user_id: uuid.UUID,
+            idempotency_key: uuid.UUID,
+            plan: Plans,
+            plan_expire_date: datetime.date,
+            amount: float
     ) -> Transaction:
         async with async_session() as session:
             stmt = insert(Transaction).values(
@@ -18,6 +25,7 @@ class TransactionRepository:
                 idempotency_key=idempotency_key,
                 user_id=user_id,
                 plan=plan,
+                plan_expire_date=plan_expire_date,
                 amount=amount
             )
             await session.execute(stmt)

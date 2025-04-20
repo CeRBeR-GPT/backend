@@ -16,6 +16,7 @@ class Transaction(Base):
     idempotency_key: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     plan: Mapped[Plans] = mapped_column()
+    plan_expire_date: Mapped[datetime.date] = mapped_column()
     amount: Mapped[float] = mapped_column()
     is_confirmed: Mapped[bool] = mapped_column(default=False)
     created_at: Mapped[datetime.datetime] = mapped_column(default=func.now())

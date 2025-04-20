@@ -25,6 +25,7 @@ class MongoDB:
     DB_USER: str
     DB_PASS: str
     DB_NAME: str
+    MONGO_LOCAL_URL: str
 
     @property
     def MONGO_URL(self):
@@ -56,6 +57,8 @@ class AuthJWT:
 class EmailSender:
     EMAIL_NAME: str
     EMAIL_PASS: str
+    SMPT_HOST: str
+    SMPT_PORT: int
     MIN_CODE: int
     MAX_CODE: int
     ADMIN_EMAIL: str
@@ -133,7 +136,8 @@ def load_config(path: str | None = None) -> Config:
             DB_PORT=env("MONGODB_PORT"),
             DB_USER=env("MONGODB_USER"),
             DB_PASS=env("MONGODB_PASS"),
-            DB_NAME=env("MONGODB_NAME")
+            DB_NAME=env("MONGODB_NAME"),
+            MONGO_LOCAL_URL=env("MONGODB_LOCAL_URL")
         ),
         redis=RedisConf(
             REDIS_HOST=env("REDIS_HOST"),
@@ -151,7 +155,9 @@ def load_config(path: str | None = None) -> Config:
             EMAIL_PASS=env("EMAIL_PASS"),
             MIN_CODE=int(env("MIN_CODE")),
             MAX_CODE=int(env("MAX_CODE")),
-            ADMIN_EMAIL=env("ADMIN_EMAIL")
+            ADMIN_EMAIL=env("ADMIN_EMAIL"),
+            SMPT_HOST=env("SMPT_HOST"),
+            SMPT_PORT=int(env("SMPT_PORT"))
         ),
         variablesData=VariablesData(
             BACKEND_HOST=env("BACKEND_HOST"),

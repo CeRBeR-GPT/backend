@@ -33,7 +33,11 @@ cython_debug/
 #VSCode
 /.vscode
 
-/certs/
-/pgdata/
 /templates/
 *.webp
+
+# Databases
+/pgdata/
+/mongodb_data
+/redis_data
+/certs/

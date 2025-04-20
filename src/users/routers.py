@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Depends, Request
-from typing import Annotated
+from fastapi import APIRouter, Depends, Request, UploadFile
+from typing import Annotated, Optional
 
-from src.users.models import User, OAuthProvider
-from src.users.schemas import UserCreate, Token, UserResponse, SuccessfulResponse, SuccessfulGetVerifyCodeResponse, \
+from src.users.models import User, OAuthProvider, CodeType
+from src.users.schemas import UserCreate, Token, UserResponse, SuccessfulGetVerifyCodeResponse, \
     SuccessfulValidation, FeedbackResponse, FeedbackCreate
 from src.users.services import UserService
 
@@ -42,22 +42,24 @@ async def github_auth_callback(request: Request, code: str, state: str):
 
 @router.get("/register/verify_code", response_model=SuccessfulGetVerifyCodeResponse)
 async def get_verify_code_by_email(email: str) -> SuccessfulGetVerifyCodeResponse:
-    await UserService().get_verify_code(email)
+    await UserService().get_registration_verify_code(email)
     return SuccessfulGetVerifyCodeResponse()
 
 
 @router.post("/register/verify_code", response_model=SuccessfulValidation)
 async def check_code_from_email(email: str, code: int) -> SuccessfulValidation:
-    if await UserService().check_verify_code(email, code):
+    if await UserService().check_verify_code(email, code, CodeType.for_registration):
         return SuccessfulValidation()
 
 
 @router.post("/feedback", response_model=FeedbackResponse)
 async def send_feedback(
         current_user: Annotated[User, Depends(UserService().get_current_user)],
-        new_feedback: FeedbackCreate
+        name: str,
+        message: str,
+        file: Optional[UploadFile] = None
 ) -> FeedbackResponse:
-    feedback = await UserService().send_feedback(new_feedback, current_user)
+    feedback = await UserService().send_feedback(FeedbackCreate(name=name, message=message), current_user, file)
     return FeedbackResponse(**feedback.to_dict())
 
 
@@ -93,6 +95,23 @@ async def edit_user_password(
     access_token = UserService().create_access_token(user)
     refresh_token = UserService().create_refresh_token(user)
     return Token(access_token=access_token, refresh_token=refresh_token)
+
+
+@router.get("/secure_verify_code")
+async def get_verify_code_by_email(
+        current_user: Annotated[User, Depends(UserService().get_current_user)],
+) -> SuccessfulGetVerifyCodeResponse:
+    await UserService().get_edit_password_verify_code(current_user)
+    return SuccessfulGetVerifyCodeResponse()
+
+
+@router.post("/secure_verify_code", response_model=SuccessfulValidation)
+async def check_code_from_email(
+        current_user: Annotated[User, Depends(UserService().get_current_user)],  # noqa
+        email: str, code: int
+) -> SuccessfulValidation:
+    if await UserService().check_verify_code(email, code, CodeType.for_reset_password):
+        return SuccessfulValidation()
 
 
 @router.get("/self", response_model=UserResponse)

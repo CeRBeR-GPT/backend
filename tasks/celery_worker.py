@@ -4,7 +4,7 @@ from celery import Celery
 from celery.schedules import crontab
 
 from src.users.repositories import UserRepository
-from utils.email_sender import send_verification_code, send_feedback
+from utils.email_sender import send_letter
 from config_data.config import Config, load_config
 
 settings: Config = load_config()
@@ -37,18 +37,10 @@ celery_app.conf.update(
     default_retry_delay=60,
     acks_late=True
 )
-def task_send_to_email(self, email, code):  # noqa: F841
-    send_verification_code(email, code)
-
-
-@celery_app.task(
-    bind=True,
-    max_retries=5,
-    default_retry_delay=60,
-    acks_late=True
-)
-def task_send_feedback(self, name: str, message: str, email: str):  # noqa: F841
-    return send_feedback(name, message, email)
+def task_send_to_email(
+        self, subject: str, body: str, address: str, file_content: str, file_name: str  # noqa: F841
+) -> str:
+    return send_letter(subject=subject, body=body, address=address, file_content=file_content, file_name=file_name)
 
 
 @celery_app.task(
@@ -57,16 +49,27 @@ def task_send_feedback(self, name: str, message: str, email: str):  # noqa: F841
     default_retry_delay=300,
     acks_late=True
 )
-def task_daily_users_update(*args):  # noqa: F841
-    asyncio.run(daily_users_update())
+def task_daily_users_update(self):
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+    try:
+        repo = UserRepository()
+
+        result = loop.run_until_complete(daily_users_update(repo))
+        return result
+    except Exception as e:
+        self.retry(exc=e)
+    finally:
+        loop.close()
+        asyncio.set_event_loop(None)
 
 
-async def daily_users_update():
-    repo = UserRepository()
+async def daily_users_update(repo: UserRepository):
     await repo.reset_available_messages()
     await repo.reset_users_plan_to_default()
+    await repo.reset_users_plan_to_default()
     await repo.delete_old_default_users_messages()
-
     return "successful update!"
 
 

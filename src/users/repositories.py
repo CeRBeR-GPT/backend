@@ -8,7 +8,7 @@ from config_data.config import Config, load_config
 from utils import jwt_settings
 from src.database import async_session
 
-from src.users.models import User, VerifyCode, Plans, plan_settings, Feedback
+from src.users.models import User, VerifyCode, Plans, plan_settings, Feedback, CodeType
 from src.users.schemas import UserCreate, FeedbackCreate
 from src.ai_chat.models import Message
 
@@ -17,9 +17,9 @@ settings: Config = load_config(".env")
 
 class UserRepository:
 
-    async def create_verify_code(self, email: str, code: int) -> None:
+    async def create_verify_code(self, email: str, code: int, code_type: CodeType) -> None:
         async with async_session() as session:
-            stmt = insert(VerifyCode).values(email=email, code=code)
+            stmt = insert(VerifyCode).values(email=email, code=code, type=code_type)
             await session.execute(stmt)
             await session.commit()
 
@@ -42,9 +42,9 @@ class UserRepository:
 
         return await self.get_feedback_by_id(feedback_id)
 
-    async def update_verify_code(self, email: str, code: int) -> None:
+    async def update_verify_code(self, email: str, code: int, code_type: CodeType) -> None:
         async with async_session() as session:
-            stmt = update(VerifyCode).where(VerifyCode.email == email).values(code=code)
+            stmt = update(VerifyCode).where(VerifyCode.email == email).values(code=code, type=code_type)
             await session.execute(stmt)
             await session.commit()
 
@@ -115,16 +115,16 @@ class UserRepository:
 
     async def reset_users_plan_to_default(self) -> None:
         current_date = datetime.date.today()
-        timedelta = datetime.timedelta(days=28)
 
         default_plan_about = plan_settings[Plans.default.value]
         new_message_length_limit = default_plan_about["max_length"]
         new_message_count_limit = default_plan_about["count_limit"]
 
         async with async_session() as session:
-            stmt = update(User).where(User.plan_purchase_date + timedelta < current_date).values(
+            stmt = update(User).where(User.plan_expire_date < current_date).values(
                 plan=Plans.default,
                 plan_purchase_date=datetime.date.today(),
+                plan_expire_date=datetime.date.today() + datetime.timedelta(days=28),
                 available_message_count=new_message_count_limit,
                 message_length_limit=new_message_length_limit,
                 message_count_limit=new_message_count_limit
@@ -148,14 +148,16 @@ class UserRepository:
             await session.execute(stmt)
             await session.commit()
 
-    async def update_user_plan(self, user_id: uuid.UUID, plan: Plans) -> User:
+    async def update_user_plan(self, user_id: uuid.UUID, plan: Plans, plan_expire_date: datetime.date) -> User:
         new_plan_about = plan_settings[plan.value]
         new_message_length_limit = new_plan_about["max_length"]
         new_message_count_limit = new_plan_about["count_limit"]
+
         async with async_session() as session:
             stmt = update(User).where(User.id == user_id).values(
                 plan=plan,
                 plan_purchase_date=datetime.date.today(),
+                plan_expire_date=plan_expire_date,
                 available_message_count=new_message_count_limit,
                 message_length_limit=new_message_length_limit,
                 message_count_limit=new_message_count_limit
