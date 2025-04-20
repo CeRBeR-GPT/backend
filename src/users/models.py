@@ -110,7 +110,7 @@ class User(Base):
     email: Mapped[str] = mapped_column(unique=True)
     plan: Mapped[Plans] = mapped_column(default=Plans.default)
     plan_purchase_date: Mapped[datetime.date] = mapped_column(default=func.now())
-    plan_expire_date: Mapped[datetime.date] = mapped_column()
+    plan_expire_date: Mapped[datetime.date] = mapped_column(default=func.now())
     message_length_limit: Mapped[int] = mapped_column(default=plan_settings["default"]["max_length"])
     available_message_count: Mapped[int] = mapped_column(default=plan_settings["default"]["count_limit"])
     message_count_limit: Mapped[int] = mapped_column(default=plan_settings["default"]["count_limit"])
