@@ -1,4 +1,5 @@
 import uuid
+import logging
 
 from datetime import datetime, date
 from typing import Optional, List
@@ -6,6 +7,9 @@ from beanie import Document
 from pydantic import BaseModel, Field
 
 from src.transactions.schemas import AvailableProviders
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 class ProviderStatistic(BaseModel):
@@ -44,19 +48,27 @@ class UserDocument(Document):
             self,
             provider: AvailableProviders,
             count: int = 1,
-            target_date: date = date.today()
+            target_date: date = None
     ) -> None:
-        day_stat = next(
-            (s for s in self.statistics if s.day == target_date),
-            None
-        )
+        if target_date is None:
+            target_date = date.today()
+        logger.info(f"Day from param: {target_date}")
+
+        day_stat = None
+        for s in self.statistics:
+            if s.day == target_date:
+                day_stat = s
+                break
 
         if not day_stat:
             day_stat = DayStatistic(day=target_date)
             self.statistics.append(day_stat)
+
+        logger.info(f"Date from day stat: {day_stat.day}")
 
         provider = day_stat.get_provider(provider.value)
         provider.messages_sent += count
         provider.last_activity = datetime.now()
 
         await self.save()
+
