@@ -72,17 +72,17 @@ def task_daily_users_update(self):
 
 
 async def daily_users_update(repo: UserRepository):
-    repo.reset_available_messages()
-    repo.reset_users_plan_to_default()
-    repo.delete_old_default_users_messages()
-
+    await repo.reset_available_messages()
+    await repo.reset_users_plan_to_default()
+    await repo.reset_users_plan_to_default()
+    await repo.delete_old_default_users_messages()
     return "successful update!"
 
 
 celery_app.conf.beat_schedule = {
     'task-daily-messages': {
         'task': 'tasks.celery_worker.task_daily_users_update',
-        'schedule': crontab(hour="08", minute="26"),
+        'schedule': crontab(hour="21", minute="00"),
     },
 }
 
