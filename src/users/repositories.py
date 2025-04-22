@@ -6,7 +6,7 @@ from sqlalchemy import insert, select, delete, update, column, func, and_
 
 from config_data.config import Config, load_config
 from utils import jwt_settings
-from src.database import async_session
+from src.database import async_session, sync_session
 
 from src.users.models import User, VerifyCode, Plans, plan_settings, Feedback, CodeType
 from src.users.schemas import UserCreate, FeedbackCreate
@@ -107,20 +107,20 @@ class UserRepository:
 
         return await self.get_user_by_id(user.id)
 
-    async def reset_available_messages(self) -> None:
-        async with async_session() as session:
+    def reset_available_messages(self) -> None:
+        with sync_session() as session:
             stmt = update(User).values(available_message_count=column('message_count_limit'))
-            await session.execute(stmt)
-            await session.commit()
+            session.execute(stmt)
+            session.commit()
 
-    async def reset_users_plan_to_default(self) -> None:
+    def reset_users_plan_to_default(self) -> None:
         current_date = datetime.date.today()
 
         default_plan_about = plan_settings[Plans.default.value]
         new_message_length_limit = default_plan_about["max_length"]
         new_message_count_limit = default_plan_about["count_limit"]
 
-        async with async_session() as session:
+        with sync_session() as session:
             stmt = update(User).where(User.plan_expire_date < current_date).values(
                 plan=Plans.default,
                 plan_purchase_date=datetime.date.today(),
@@ -129,24 +129,24 @@ class UserRepository:
                 message_length_limit=new_message_length_limit,
                 message_count_limit=new_message_count_limit
             )
-            await session.execute(stmt)
-            await session.commit()
+            session.execute(stmt)
+            session.commit()
 
-    async def delete_old_default_users_messages(self) -> None:
+    def delete_old_default_users_messages(self) -> None:
         current_date = datetime.date.today()
         timedelta = datetime.timedelta(days=7)
 
         default_users_ids = set()
-        for user in await self.get_all_default_users():
+        for user in self.get_all_default_users():
             default_users_ids.add(user.id)
 
-        async with async_session() as session:
+        with sync_session() as session:
             stmt = delete(Message).where(and_(
                 Message.user_id.in_(default_users_ids),
                 Message.created_at + timedelta < current_date
             ))
-            await session.execute(stmt)
-            await session.commit()
+            session.execute(stmt)
+            session.commit()
 
     async def update_user_plan(self, user_id: uuid.UUID, plan: Plans, plan_expire_date: datetime.date) -> User:
         new_plan_about = plan_settings[plan.value]
@@ -184,24 +184,10 @@ class UserRepository:
 
         return user
 
-    async def get_all_default_users(self) -> List[User]:
-        async with async_session() as session:
+    def get_all_default_users(self) -> List[User]:
+        with sync_session() as session:
             query = select(User).where(User.plan == Plans.default)
-            result = await session.execute(query)
+            result = session.execute(query)
             users = result.scalars().all()
 
             return users
-
-    async def get_all_users(self) -> List[User]:
-        async with async_session() as session:
-            query = select(User)
-            result = await session.execute(query)
-            users = result.scalars().all()
-
-            return users
-
-    async def delete_user(self, user: User) -> None:
-        async with async_session() as session:
-            stmt = delete(User).where(User.id == user.id)
-            await session.execute(stmt)
-            await session.commit()

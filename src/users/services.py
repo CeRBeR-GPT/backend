@@ -312,9 +312,6 @@ class UserService:
     async def edit_user_password(self, user: User, password: str) -> User:
         return await self.repository.edit_password(user, password)
 
-    async def delete_user(self, user: User) -> None:
-        return await self.repository.delete_user(user)
-
     async def get_current_user_for_refresh(self, token: HTTPAuthorizationCredentials = Depends(http_bearer)) -> User:
         return await self.validate_user(expected_token_type=REFRESH_TOKEN_TYPE, token=token.credentials)
 
