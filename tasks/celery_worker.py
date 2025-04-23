@@ -1,6 +1,8 @@
+import asyncio
+
+from typing import Optional
 from celery import Celery
 from celery.schedules import crontab
-from typing import Optional
 
 from src.users.repositories import UserRepository
 from utils.email_sender import send_letter
@@ -49,19 +51,24 @@ def task_send_to_email(
 
 @celery_app.task(
     bind=True,
-    max_retries=3,
+    max_retries=5,
     default_retry_delay=300,
-    acks_late=True,
-    ignore_result=True
+    acks_late=True
 )
-async def task_daily_users_update(self):
+def task_daily_users_update(self):
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
     try:
         repo = UserRepository()
-        await repo.reset_available_messages()
-        await repo.reset_users_plan_to_default()
-        await repo.delete_old_default_users_messages()
+
+        result = loop.run_until_complete(daily_users_update(repo))
+        return result
     except Exception as e:
-        raise self.retry(exc=e)
+        self.retry(exc=e)
+    finally:
+        loop.close()
+        asyncio.set_event_loop(None)
 
 
 async def daily_users_update(repo: UserRepository):
