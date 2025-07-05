@@ -7,6 +7,7 @@ from sqlalchemy import insert, select, delete, update, column, func, and_
 from config_data.config import Config, load_config
 from utils import jwt_settings
 from src.database import async_session
+from src.logger import logger
 
 from src.users.models import User, VerifyCode, Plans, plan_settings, Feedback, CodeType
 from src.users.schemas import UserCreate, FeedbackCreate
@@ -113,6 +114,8 @@ class UserRepository:
             await session.execute(stmt)
             await session.commit()
 
+        logger.info("Successful reset daily messages!")
+
     async def reset_users_plan_to_default(self) -> None:
         current_date = datetime.date.today()
 
@@ -132,6 +135,8 @@ class UserRepository:
             await session.execute(stmt)
             await session.commit()
 
+        logger.info("Successful reset plans!")
+
     async def delete_old_default_users_messages(self) -> None:
         current_date = datetime.date.today()
         timedelta = datetime.timedelta(days=7)
@@ -147,6 +152,8 @@ class UserRepository:
             ))
             await session.execute(stmt)
             await session.commit()
+
+        logger.info("Successful delete old default users messages!")
 
     async def update_user_plan(self, user_id: uuid.UUID, plan: Plans, plan_expire_date: datetime.date) -> User:
         new_plan_about = plan_settings[plan.value]

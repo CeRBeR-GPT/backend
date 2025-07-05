@@ -1,6 +1,7 @@
 import asyncio
 
 from src.users.repositories import UserRepository
+from src.logger import logger
 
 
 async def daily_users_update(repo: UserRepository):
@@ -8,7 +9,7 @@ async def daily_users_update(repo: UserRepository):
     await repo.reset_users_plan_to_default()
     await repo.delete_old_default_users_messages()
 
-    print("Successful update!")
+    logger.info("Successful daily update!")
 
 
 user_repository = UserRepository()
