@@ -1,20 +1,23 @@
-FROM python:3.11-slim
+FROM python:3.11
 
-# Устанавливаем рабочую директорию
 WORKDIR /app
 
-# Обновляем pip и устанавливаем необходимые инструменты сборки
+# Установка зависимостей
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends gcc python3-dev && \
+    apt-get install -y --no-install-recommends cron nano && \
     pip install --upgrade pip setuptools wheel && \
     rm -rf /var/lib/apt/lists/*
 
-# Копируем и устанавливаем зависимости
+# Установка зависимостей проекта
 COPY requirements.txt .
-RUN pip install --no-cache-dir --no-build-isolation -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Копируем весь проект
+# Копируем проект и .env
 COPY . .
 
-# Команда по умолчанию (для FastAPI)
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+# Создаём и настраиваем cron-задачу
+RUN echo "0 21 * * * root cd /app && /usr/local/bin/python /app/cron.py >> /app/cron_tasks.log 2>&1" > /etc/cron.d/mycron && \
+    chmod 0644 /etc/cron.d/mycron
+
+# Запускаем cron в foreground и uvicorn
+CMD cron -f & uvicorn main:app --host 0.0.0.0 --port 8000 --reload
